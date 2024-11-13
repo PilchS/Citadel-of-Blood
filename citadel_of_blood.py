@@ -1,5 +1,7 @@
 import random
 
+# dodac wszystkie pokoje, grafika, przeciwnicy i pulapki
+
 connections = {
     "x": {"top": "small", "bottom": "small", "left": "small", "right": "small"},
     "a": {"right": "small", "bottom": "small"},
@@ -8,34 +10,17 @@ connections = {
     "d": {"left": "small", "top": "small"},
     "e": {"left": "small", "right": "small"},
     "f": {"top": "small", "bottom": "small"},
-    "g": {"bottom": "big", "right": "small"},
-    "h": {"top": "big", "left": "small"}
 }
 
 
-# a -> 90deg = c, 180deg = b, 270deg = d, potrzebuje tylko room limitu na a, jak nie pasuje i jest rotacja, wtedy przypisuje literke z otpowiednia rotacja
-# nie powinno obracac przy startowym pokoju
-room_limits = {
-    "x": 1,
-    "a": 2,
-    "b": 2,
-    "c": 2,
-    "d": 2,
-    "e": 1,
-    "f": 1,
-    "g": 2,
-    "h": 2
-}
-
-room_counts = {room: 0 for room in room_limits}
-room_rotations = {room: 0 for room in connections}
+shared_a_count = 5
+shared_e_count = 5 
 
 map_grid = [[" "] * 10 for _ in range(10)]
 start_x, start_y = 5, 5
 
 map_grid[start_x][start_y] = "X"
 used_positions = {(start_x, start_y): "x"}
-room_counts["x"] = 1  
 
 def get_adjacent_position(x, y, direction):
     if direction == "top":
@@ -61,66 +46,66 @@ def compatible_connection(current_room, next_room, direction):
             opposite_dir in connections[next_room] and
             connections[current_room][direction] == connections[next_room][opposite_dir])
 
-def rotate_room(room):
-    rotated = {}
-    for direction, connection_type in connections[room].items():
-        if direction == "top":
-            rotated["right"] = connection_type
-        elif direction == "right":
-            rotated["bottom"] = connection_type
-        elif direction == "bottom":
-            rotated["left"] = connection_type
-        elif direction == "left":
-            rotated["top"] = connection_type
-    connections[room] = rotated
-    room_rotations[room] = (room_rotations[room] + 1) % 4
+def try_place_room(current_room, base_room, current_position, direction):
+    global shared_a_count, shared_e_count
+    rotation_order = ["a", "c", "b", "d"]
+    is_line_room = base_room in ["e", "f"]
 
-def try_place_room_with_rotations(current_room, next_room, current_position, direction):
-    for rotation_count in range(4):
+    if is_line_room:
+        chosen_room = "e" if direction in ["left", "right"] else "f"
         nx, ny = get_adjacent_position(current_position[0], current_position[1], direction)
-        
-        if (0 <= nx < len(map_grid)) and (0 <= ny < len(map_grid[0])) and (nx, ny) not in used_positions:
-            if compatible_connection(current_room, next_room, direction):
-                map_grid[nx][ny] = next_room
-                used_positions[(nx, ny)] = next_room
-                room_counts[next_room] += 1
-                print(f"Connecting room {current_room} to room {next_room} from the {direction} after rotating {rotation_count * 90} degrees.")
-                
-                print(f"Current entrances of room {next_room}: {connections[next_room]}\n")
-                return (nx, ny, True)
-        
-        rotate_room(next_room)
 
-    return (None, None, False)
+        if (0 <= nx < len(map_grid)) and (0 <= ny < len(map_grid[0])) and (nx, ny) not in used_positions:
+            if compatible_connection(current_room, chosen_room, direction):
+                map_grid[nx][ny] = chosen_room
+                used_positions[(nx, ny)] = chosen_room
+                shared_e_count -= 1
+                print(f"Connecting room {current_room} to room {chosen_room} from the {direction}.")
+                return (nx, ny, chosen_room, True)
+
+    else:
+        for rotated_room in rotation_order:
+            nx, ny = get_adjacent_position(current_position[0], current_position[1], direction)
+            if (0 <= nx < len(map_grid)) and (0 <= ny < len(map_grid[0])) and (nx, ny) not in used_positions:
+                if compatible_connection(current_room, rotated_room, direction):
+                    map_grid[nx][ny] = rotated_room
+                    used_positions[(nx, ny)] = rotated_room
+                    shared_a_count -= 1
+                    print(f"Connecting room {current_room} to room {rotated_room} from the {direction}.")
+                    return (nx, ny, rotated_room, True)
+
+    return (None, None, None, False)
 
 def create_dungeon(max_rooms):
     path = []
     current_room = "x"
     current_position = (start_x, start_y)
     room_count = 1
-    consecutive_backtracks = 0
 
     while room_count < max_rooms:
-        possible_rooms = [room for room in connections.keys() if room_counts[room] < room_limits[room]]
-        
+        possible_rooms = []
+
+        if shared_a_count > 0:
+            possible_rooms.append("a")
+        if shared_e_count > 0:
+            possible_rooms.append("e")
+
         if not possible_rooms:
-            print("No more available rooms to place.")
-            return
-        
-        max_consecutive_backtracks = len(used_positions)
+            print("No available rooms left to draw.")
+            break
+
         random.shuffle(possible_rooms)
         placed = False
 
         for next_room in possible_rooms:
             for direction in connections[current_room]:
-                nx, ny, placed = try_place_room_with_rotations(current_room, next_room, current_position, direction)
-                
+                nx, ny, placed_room, placed = try_place_room(current_room, next_room, current_position, direction)
+
                 if placed:
                     path.append((current_position, current_room))
                     current_position = (nx, ny)
-                    current_room = next_room
+                    current_room = placed_room
                     room_count += 1
-                    consecutive_backtracks = 0
                     break
 
             if placed:
@@ -131,16 +116,12 @@ def create_dungeon(max_rooms):
                 last_position, last_room = path.pop()
                 current_position = last_position
                 current_room = last_room
-                consecutive_backtracks += 1
                 print(f"Backtracking to room {current_room} at position {current_position}")
-                if consecutive_backtracks >= max_consecutive_backtracks:
-                    print("Too many consecutive backtracks, ending dungeon generation.")
-                    return
             else:
-                print(f"Bad dungeon: could not connect room {current_room} to any available room.")
+                print("Bad dungeon: could not connect to any available room.")
                 return
 
-create_dungeon(10)
+create_dungeon(20)
 
 for row in map_grid:
     print(" ".join(row))
