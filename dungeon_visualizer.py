@@ -1,51 +1,40 @@
-import pygame
-import os
+from PIL import Image
+from dungeon_creator import room_counts
 
-TILE_SIZE = 54
-GRID_WIDTH = 10
-GRID_HEIGHT = 10
-WINDOW_WIDTH = TILE_SIZE * GRID_WIDTH
-WINDOW_HEIGHT = TILE_SIZE * GRID_HEIGHT
-TILE_FOLDER = "tiles"
 
-pygame.init()
-window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-pygame.display.set_caption("Dungeon Map")
-clock = pygame.time.Clock()
+tile_folder = "tiles"
+tile_size = 53
 
-tile_images = {}
-for file_name in os.listdir(TILE_FOLDER):
-    if file_name.endswith(".png"):
-        tile_name = file_name.split(".")[0]
-        tile_images[tile_name] = pygame.image.load(os.path.join(TILE_FOLDER, file_name))
+def load_tiles():
+    tiles = {}
+    for base_room in room_counts.keys():
+        tile_path = f"{tile_folder}/{base_room}.png"
+        tiles[base_room] = Image.open(tile_path).convert("RGBA")
+    return tiles
 
-def draw_dungeon(map_grid):
-    window.fill((0, 0, 0))
-    for row_idx, row in enumerate(map_grid):
-        for col_idx, tile_name in enumerate(row):
-            if tile_name != " ":
-                tile_image = tile_images.get(tile_name)
-                if tile_image:
-                    x = col_idx * TILE_SIZE
-                    y = row_idx * TILE_SIZE
-                    window.blit(tile_image, (x, y))
-    pygame.display.flip()
+def rotate_tile(tile, rotation_suffix):
+    angle = -90 * (int(rotation_suffix) - 1)
+    return tile.rotate(angle, expand=True)
 
-dungeon_map = [
-    [" ", " ", " ", "a1", "c1", " "],
-    [" ", " ", " ", " ", "b1", "c2"],
-    [" ", " ", " ", "X", "f1", " "],
-    [" ", " ", " ", " ", "f2", " "],
-    [" ", " ", " ", " ", "b2", " "],
-]
+def draw_dungeon_visualization(used_positions, tiles, window_width, window_height, starting_position):
+    tile_size = 53
 
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-    
-    draw_dungeon(dungeon_map)
-    clock.tick(30)
+    offset_x = window_width // 2
+    offset_y = window_height // 2
 
-pygame.quit()
+    start_x, start_y = starting_position
+
+    canvas = Image.new("RGBA", (window_width, window_height), (255, 255, 255, 0))
+
+    for (x, y), room in used_positions.items():
+        base_room = room[:-1]
+        rotation_suffix = room[-1]
+        tile = tiles[base_room]
+        rotated_tile = rotate_tile(tile, rotation_suffix)
+
+        pos_x = offset_x + (y - start_y) * tile_size
+        pos_y = offset_y + (x - start_x) * tile_size
+
+        canvas.paste(rotated_tile, (pos_x, pos_y), rotated_tile)
+
+    return canvas
