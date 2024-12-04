@@ -55,30 +55,67 @@ connections = {
     "j1": {"left": "big", "right": "big"},
     "j2": {"top": "big", "bottom": "big"},
 
-    #stairs with 1 entry = 4
-    "Sa1": {"right": "small"},
-    "Sa2": {"bottom": "small"},
-    "Sa3": {"left": "small"},
-    "Sa4": {"top": "small"},
+    # #stairs with 1 entry = 4
+    # "Sa1": {"right": "small"},
+    # "Sa2": {"bottom": "small"},
+    # "Sa3": {"left": "small"},
+    # "Sa4": {"top": "small"},
 
-    #stairs with 2 horizontal entries = 1
-    "Sb1": {"left": "small", "right": "small"},
-    "Sb2": {"top": "small", "bottom": "small"},
+    # #stairs with 2 horizontal entries = 1
+    # "Sb1": {"left": "small", "right": "small"},
+    # "Sb2": {"top": "small", "bottom": "small"},
 
-    #stairs with 3 entries = 2 
-    "Sc1": {"left": "small", "top": "small", "bottom": "small"},
-    "Sc2": {"left": "small", "right": "small", "top": "small"},
-    "Sc3": {"right": "small", "top": "small", "bottom": "small"},
-    "Sc4": {"left": "small", "right": "small", "bottom": "small"},
+    # #stairs with 3 entries = 2 
+    # "Sc1": {"left": "small", "top": "small", "bottom": "small"},
+    # "Sc2": {"left": "small", "right": "small", "top": "small"},
+    # "Sc3": {"right": "small", "top": "small", "bottom": "small"},
+    # "Sc4": {"left": "small", "right": "small", "bottom": "small"},
 
-    #stairs with 4 entries = 2
-    "Sd": {"left": "small", "top": "small", "bottom": "small"},
+    # #stairs with 4 entries = 2
+    # "Sd": {"left": "small", "top": "small", "bottom": "small"},
 
-    #stairs with 2 L entries = 1
-    "Se1": {"left": "small", "bottom": "small"},
-    "Se2": {"left": "small", "top": "small"},
-    "Se3": {"right": "small", "top": "small"},
-    "Se4": {"right": "small", "bottom": "small"}
+    # #stairs with 2 L entries = 1
+    # "Se1": {"left": "small", "bottom": "small"},
+    # "Se2": {"left": "small", "top": "small"},
+    # "Se3": {"right": "small", "top": "small"},
+    # "Se4": {"right": "small", "bottom": "small"}
+}
+
+room_types = {
+    "a1": {"type": "corridor"},
+    "a2": {"type": "corridor"},
+    "a3": {"type": "corridor"},
+    "a4": {"type": "corridor"},
+    "b1": {"type": "corridor"},
+    "b2": {"type": "corridor"},
+    "b3": {"type": "corridor"},
+    "b4": {"type": "corridor"},
+    "c1": {"type": "corridor"},
+    "c2": {"type": "corridor"},
+    "c3": {"type": "corridor"},
+    "c4": {"type": "corridor"},
+    "d1": {"type": "corridor"},
+    "d2": {"type": "corridor"},
+    "d3": {"type": "corridor"},
+    "d4": {"type": "corridor"},
+    "e1": {"type": "corridor"},
+    "e2": {"type": "corridor"},
+    "f1": {"type": "corridor"},
+    "f2": {"type": "corridor"},
+    "g1": {"type": "corridor"},
+    "g2": {"type": "corridor"},
+    "g3": {"type": "corridor"},
+    "g4": {"type": "corridor"},
+    "h1": {"type": "corridor"},
+    "h2": {"type": "corridor"},
+    "h3": {"type": "corridor"},
+    "h4": {"type": "corridor"},
+    "i1": {"type": "corridor"},
+    "i2": {"type": "corridor"},
+    "i3": {"type": "corridor"},
+    "i4": {"type": "corridor"},
+    "j1": {"type": "corridor"},
+    "j2": {"type": "corridor"}
 }
 
 room_counts = {

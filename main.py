@@ -2,6 +2,42 @@ import tkinter as tk
 from dungeon_creator import create_dungeon
 from dungeon_visualizer import load_tiles, draw_dungeon_visualization
 from PIL import ImageTk
+from collections import deque
+
+
+def bfs_shortest_path(start, target, used_positions):
+    """Find the shortest path between start and target using BFS."""
+    queue = deque([(start, [])])
+    visited = set()
+
+    while queue:
+        current, path = queue.popleft()
+
+        if current == target:
+            return path
+
+        if current in visited:
+            continue
+
+        visited.add(current)
+
+        neighbors = []
+        x, y = current
+        directions = {
+            "top": (x - 1, y),
+            "bottom": (x + 1, y),
+            "left": (x, y - 1),
+            "right": (x, y + 1),
+        }
+
+        for direction, neighbor in directions.items():
+            if neighbor in used_positions and neighbor not in visited:
+                neighbors.append(neighbor)
+
+        for neighbor in neighbors:
+            queue.append((neighbor, path + [neighbor]))
+
+    return []
 
 
 def main():
@@ -50,11 +86,51 @@ def main():
     revealed_rooms = []
     room_positions = list(used_positions.items())
     starting_room_position = room_positions[0][0]
+    player_position = starting_room_position
 
     canvas_center_x = canvas_width // 2
     canvas_center_y = canvas_height // 2
 
     dungeon_image = None
+
+    def draw_player(position):
+        x, y = position
+        canvas_x = canvas_center_x + (y - starting_room_position[1]) * 53
+        canvas_y = canvas_center_y + (x - starting_room_position[0]) * 53
+
+        radius = 10
+        tile_center_x = canvas_x + 53 // 2
+        tile_center_y = canvas_y + 53 // 2
+
+        canvas.create_oval(
+            tile_center_x - radius, tile_center_y - radius,
+            tile_center_x + radius, tile_center_y + radius,
+            fill="green", outline=""
+        )
+
+
+    def move_player_to(target_position):
+        nonlocal player_position
+        path = bfs_shortest_path(player_position, target_position, dict(revealed_rooms))
+
+        for step in path:
+            player_position = step
+            canvas.delete("all")
+            draw_dungeon()
+            draw_player(player_position)
+            canvas.update()
+            canvas.after(200)
+
+    def draw_dungeon():
+        nonlocal dungeon_image
+        dungeon_image = draw_dungeon_visualization(
+            dict(revealed_rooms), tiles, canvas_width, canvas_height, starting_room_position
+        )
+        dungeon_image_tk = ImageTk.PhotoImage(dungeon_image)
+        canvas.create_image(
+            canvas_center_x, canvas_center_y, anchor="center", image=dungeon_image_tk
+        )
+        canvas.image = dungeon_image_tk
 
     def reveal_next_room():
         nonlocal dungeon_image
@@ -62,24 +138,16 @@ def main():
             position, room = room_positions.pop(0)
             revealed_rooms.append((position, room))
 
-            dungeon_image = draw_dungeon_visualization(
-                dict(revealed_rooms), tiles, canvas_width, canvas_height, starting_room_position
-            )
-
-            dungeon_image_tk = ImageTk.PhotoImage(dungeon_image)
-
-            dungeon_width, dungeon_height = dungeon_image.size
-            canvas.config(scrollregion=(0, 0, dungeon_width, dungeon_height))
-            canvas.create_image(
-                canvas_center_x, canvas_center_y, anchor="center", image=dungeon_image_tk
-            )
-
-            canvas.image = dungeon_image_tk
+            draw_dungeon()
+            move_player_to(position)
         else:
             print("All rooms revealed.")
             reveal_button.config(state=tk.DISABLED)
 
     reveal_button.config(command=reveal_next_room)
+
+    draw_dungeon()
+    draw_player(player_position)
 
     root.mainloop()
 
