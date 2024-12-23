@@ -11,6 +11,7 @@ def load_tiles():
         if tile.endswith(".png"):
             tile_name = tile.split(".")[0]
             if tile_name == "end":
+                # Ensure proper alpha handling for 'end' tile
                 tiles[tile_name] = Image.open(f"tiles/{tile}").convert("RGBA")
             else:
                 tiles[tile_name] = Image.open(f"tiles/{tile}").convert("RGBA")

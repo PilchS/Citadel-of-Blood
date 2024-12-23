@@ -35,8 +35,8 @@ connections = {
     "e2": {"left": "small", "right": "small", "top": "big", "bottom": "big"},
 
     # f = 7
-    "f1": {"left": "small", "right": "small"},
-    "f2": {"top": "small", "bottom": "small"},
+    "f1": {"top": "small", "bottom": "small"},
+    "f2": {"left": "small", "right": "small"},
 
     # g = 6
     "g1": {"left": "small", "right": "big", "bottom": "big"},
@@ -57,14 +57,14 @@ connections = {
     "i4": {"left": "small", "right": "big", "top": "small", "bottom": "big"},
 
     # j = 14
-    "j1": {"left": "big", "right": "big"},
-    "j2": {"top": "big", "bottom": "big"},
+    "j1": {"top": "big", "bottom": "big"},
+    "j2": {"left": "big", "right": "big"},
+    
 
 }
 
 room_types = {
     "start": {"type": "start"},
-    "end": {"type": "end"},
     "a1": {"type": "corridor"},
     "a2": {"type": "corridor"},
     "a3": {"type": "corridor"},
@@ -102,7 +102,8 @@ room_types = {
 }
 
 room_counts = {
-    "start": 0, "end":0, "a": 11, "b": 4, "c": 12, "d": 16, "e": 14, "f": 7, "g": 6, "h": 18, "i": 11, "j": 14
+    "start": 0, "a": 11, "b": 4, "c": 12, "d": 16, "e": 14, "f": 7, "g": 6, "h": 18, "i": 11, "j": 14
+    #"start": 0, "a": 0, "b": 0, "c": 0, "d": 0, "e": 0, "f": 0, "g": 0, "h": 0, "i": 0, "j": 50
 }
 
 rotation_map = {room: base for base in room_counts for room in connections if room.startswith(base)}
@@ -119,7 +120,7 @@ def draw_starting_room():
     predefined_start_room = "start"
     map_grid[start_x][start_y] = predefined_start_room
     used_positions[(start_x, start_y)] = predefined_start_room
-    room_counts[predefined_start_room] = 0
+    room_counts[predefined_start_room] = 0  # Mark as used
     print(f"Starting room drawn: {predefined_start_room}")
     return predefined_start_room
 
@@ -183,7 +184,7 @@ def try_place_room(current_room, base_room, current_position, direction):
     rotations = [r for r in connections if r.startswith(base_room)]
 
     for rotated_room in rotations:
-        if rotated_room == "start" or rotated_room == "end":
+        if rotated_room == "start":
             continue
 
         nx, ny = get_adjacent_position(current_position[0], current_position[1], direction)
@@ -193,10 +194,13 @@ def try_place_room(current_room, base_room, current_position, direction):
                     map_grid[nx][ny] = rotated_room
                     used_positions[(nx, ny)] = rotated_room
                     room_counts[base_room] -= 1
-                    print(f"Connecting room {current_room} to room {rotated_room} from the {direction}")
+                    print(f"Connecting room {current_room} to room {rotated_room} from the {direction}. Drawn room: {rotated_room}")
                     return (nx, ny, rotated_room, True)
 
     return (None, None, None, False)
+
+
+
 
 def create_dungeon(max_rooms):
     global start_x, start_y
@@ -206,9 +210,9 @@ def create_dungeon(max_rooms):
     if not current_room:
         return None
 
-    room_counts["start"] = 0  # Ensure the start room is considered used
-    path = [(current_position, current_room)]  # Include the start room in the path
-    explored_directions = {current_position: set()}  # Track explored directions
+    room_counts["start"] = 0
+
+    path = []
     room_count = 1
     backtrack_limit = 50
 
@@ -220,50 +224,34 @@ def create_dungeon(max_rooms):
 
         base_room = random.choice(possible_rooms)
         placed = False
+        attempted_directions = set()
 
-        # Attempt to place a room from the current position
         for direction in connections[current_room]:
-            if direction in explored_directions.get(current_position, set()):
+            if direction in attempted_directions:
                 continue
+            attempted_directions.add(direction)
 
-            # Allow connection regardless of passage size if involving the start room
-            nx, ny, placed_room, placed = try_place_room(
-                current_room, base_room, current_position, direction, allow_any_passage=(current_room == "start")
-            )
+            nx, ny, placed_room, placed = try_place_room(current_room, base_room, current_position, direction)
 
             if placed:
                 path.append((current_position, current_room))
-                explored_directions.setdefault(current_position, set()).add(direction)
                 current_position = (nx, ny)
                 current_room = placed_room
                 room_count += 1
                 break
 
-        # If placement fails, backtrack
         if not placed:
             backtrack_count = 0
             while not placed and path and backtrack_count < backtrack_limit:
                 print("Backtracking...")
-
-                # Always prioritize the start room if it has unexplored directions
-                if backtrack_count == 0 and start_x == path[0][0][0] and start_y == path[0][0][1]:
-                    last_position, last_room = path[0]
-                else:
-                    last_position, last_room = random.choice(path)
-
+                last_position, last_room = random.choice(path)
                 current_position = last_position
                 base_room = rotation_map[last_room]
                 backtrack_count += 1
 
                 for direction in connections[last_room]:
-                    if direction in explored_directions.get(last_position, set()):
-                        continue
-
-                    nx, ny, rotated_room, success = try_place_room(
-                        last_room, base_room, current_position, direction, allow_any_passage=(last_room == "start")
-                    )
+                    nx, ny, rotated_room, success = try_place_room(last_room, base_room, current_position, direction)
                     if success:
-                        explored_directions.setdefault(last_position, set()).add(direction)
                         current_position = (nx, ny)
                         current_room = rotated_room
                         room_count += 1
@@ -277,13 +265,8 @@ def create_dungeon(max_rooms):
             if not placed:
                 print("Failed to place any room after backtracking.")
                 return used_positions
-
-    # Mark the last room as the "end" tile
-    if used_positions:
-        last_room_position = list(used_positions.keys())[-1]
-        used_positions[last_room_position] = "end"
-        print(f"The 'end' tile has been placed at position {last_room_position}.")
-
+            
+            if used_positions:
+                last_room_position = list(used_positions.keys())[-1]
+                used_positions[last_room_position] = "end"
     return used_positions
-
-
