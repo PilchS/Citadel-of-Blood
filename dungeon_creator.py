@@ -1,6 +1,11 @@
 import random
 
 connections = {
+    # start = 1
+    "start": {"top": "any", "bottom": "any", "left": "any", "right": "any"},
+
+    "end": {"top": "any", "bottom": "any", "left": "any", "right": "any"},
+
     # a = 11
     "a1": {"right": "small"},
     "a2": {"bottom": "small"},
@@ -55,33 +60,11 @@ connections = {
     "j1": {"left": "big", "right": "big"},
     "j2": {"top": "big", "bottom": "big"},
 
-    # #stairs with 1 entry = 4
-    # "Sa1": {"right": "small"},
-    # "Sa2": {"bottom": "small"},
-    # "Sa3": {"left": "small"},
-    # "Sa4": {"top": "small"},
-
-    # #stairs with 2 horizontal entries = 1
-    # "Sb1": {"left": "small", "right": "small"},
-    # "Sb2": {"top": "small", "bottom": "small"},
-
-    # #stairs with 3 entries = 2 
-    # "Sc1": {"left": "small", "top": "small", "bottom": "small"},
-    # "Sc2": {"left": "small", "right": "small", "top": "small"},
-    # "Sc3": {"right": "small", "top": "small", "bottom": "small"},
-    # "Sc4": {"left": "small", "right": "small", "bottom": "small"},
-
-    # #stairs with 4 entries = 2
-    # "Sd": {"left": "small", "top": "small", "bottom": "small"},
-
-    # #stairs with 2 L entries = 1
-    # "Se1": {"left": "small", "bottom": "small"},
-    # "Se2": {"left": "small", "top": "small"},
-    # "Se3": {"right": "small", "top": "small"},
-    # "Se4": {"right": "small", "bottom": "small"}
 }
 
 room_types = {
+    "start": {"type": "start"},
+    "end": {"type": "end"},
     "a1": {"type": "corridor"},
     "a2": {"type": "corridor"},
     "a3": {"type": "corridor"},
@@ -119,9 +102,7 @@ room_types = {
 }
 
 room_counts = {
-    "a": 11, "b": 4, "c": 12, "d": 16, "e": 14, "f": 7, "g": 6, "h": 18, "i": 11, "j": 14
-    #, "Sa": 4, "Sb": 1, "Sc": 2, "Sd": 2, "Se": 1
-    #"a": 0, "b": 0, "c": 0, "d": 0, "e": 0, "f": 0, "g": 0, "h": 0, "i": 0, "j": 20, "Sa": 0, "Sb": 0, "Sc": 0, "Sd": 0, "Sf": 0
+    "start": 0, "end":0, "a": 11, "b": 4, "c": 12, "d": 16, "e": 14, "f": 7, "g": 6, "h": 18, "i": 11, "j": 14
 }
 
 rotation_map = {room: base for base in room_counts for room in connections if room.startswith(base)}
@@ -135,20 +116,14 @@ used_positions = {(start_x, start_y): "x"}
 
 def draw_starting_room():
     global start_x, start_y
-    available_rooms = [room for room, count in room_counts.items() if count > 0]
-    if not available_rooms:
-        print("No available starting rooms.")
-        return None
+    predefined_start_room = "start"
+    map_grid[start_x][start_y] = predefined_start_room
+    used_positions[(start_x, start_y)] = predefined_start_room
+    room_counts[predefined_start_room] = 0
+    print(f"Starting room drawn: {predefined_start_room}")
+    return predefined_start_room
 
-    base_room = random.choice(available_rooms)
-    rotations = [r for r in connections if r.startswith(base_room)]
-    starting_room = random.choice(rotations)
 
-    map_grid[start_x][start_y] = starting_room
-    used_positions[(start_x, start_y)] = starting_room
-    room_counts[base_room] -= 1
-    print(f"Starting room drawn: {starting_room}")
-    return starting_room
 
 
 def get_adjacent_position(x, y, direction):
@@ -170,10 +145,18 @@ def opposite_direction(direction):
 
 
 def compatible_connection(current_room, next_room, direction):
+    if current_room == "start" or next_room == "start":
+        return True
+
     opposite_dir = opposite_direction(direction)
-    return (direction in connections[current_room] and
-            opposite_dir in connections[next_room] and
-            connections[current_room][direction] == connections[next_room][opposite_dir])
+
+    if direction in connections[current_room] and opposite_dir in connections[next_room]:
+        current_conn = connections[current_room][direction]
+        next_conn = connections[next_room][opposite_dir]
+
+        return current_conn == "any" or next_conn == "any" or current_conn == next_conn
+
+    return False
 
 
 def check_all_connections(current_position, new_room):
@@ -200,6 +183,9 @@ def try_place_room(current_room, base_room, current_position, direction):
     rotations = [r for r in connections if r.startswith(base_room)]
 
     for rotated_room in rotations:
+        if rotated_room == "start" or rotated_room == "end":
+            continue
+
         nx, ny = get_adjacent_position(current_position[0], current_position[1], direction)
         if (0 <= nx < len(map_grid)) and (0 <= ny < len(map_grid[0])) and (nx, ny) not in used_positions:
             if compatible_connection(current_room, rotated_room, direction):
@@ -207,12 +193,10 @@ def try_place_room(current_room, base_room, current_position, direction):
                     map_grid[nx][ny] = rotated_room
                     used_positions[(nx, ny)] = rotated_room
                     room_counts[base_room] -= 1
-                    print(f"Connecting room {current_room} to room {rotated_room} from the {direction}. Drawn room: {rotated_room}")
+                    print(f"Connecting room {current_room} to room {rotated_room} from the {direction}")
                     return (nx, ny, rotated_room, True)
 
     return (None, None, None, False)
-
-
 
 def create_dungeon(max_rooms):
     global start_x, start_y
@@ -220,11 +204,13 @@ def create_dungeon(max_rooms):
     current_room = draw_starting_room()
 
     if not current_room:
-        print("Dungeon creation failed: No starting room available.")
         return None
 
-    path = []
+    room_counts["start"] = 0  # Ensure the start room is considered used
+    path = [(current_position, current_room)]  # Include the start room in the path
+    explored_directions = {current_position: set()}  # Track explored directions
     room_count = 1
+    backtrack_limit = 50
 
     while room_count < max_rooms:
         possible_rooms = [r for r, count in room_counts.items() if count > 0]
@@ -235,35 +221,69 @@ def create_dungeon(max_rooms):
         base_room = random.choice(possible_rooms)
         placed = False
 
+        # Attempt to place a room from the current position
         for direction in connections[current_room]:
-            nx, ny, placed_room, placed = try_place_room(current_room, base_room, current_position, direction)
+            if direction in explored_directions.get(current_position, set()):
+                continue
+
+            # Allow connection regardless of passage size if involving the start room
+            nx, ny, placed_room, placed = try_place_room(
+                current_room, base_room, current_position, direction, allow_any_passage=(current_room == "start")
+            )
 
             if placed:
                 path.append((current_position, current_room))
+                explored_directions.setdefault(current_position, set()).add(direction)
                 current_position = (nx, ny)
                 current_room = placed_room
                 room_count += 1
                 break
 
+        # If placement fails, backtrack
         if not placed:
-            if path:
-                last_position, last_room = path.pop()
+            backtrack_count = 0
+            while not placed and path and backtrack_count < backtrack_limit:
+                print("Backtracking...")
+
+                # Always prioritize the start room if it has unexplored directions
+                if backtrack_count == 0 and start_x == path[0][0][0] and start_y == path[0][0][1]:
+                    last_position, last_room = path[0]
+                else:
+                    last_position, last_room = random.choice(path)
+
                 current_position = last_position
                 base_room = rotation_map[last_room]
-
-                print(f"Backtracking to room {last_room} at position {current_position}. Attempting rotations.")
+                backtrack_count += 1
 
                 for direction in connections[last_room]:
-                    nx, ny, rotated_room, success = try_place_room(last_room, base_room, current_position, direction)
+                    if direction in explored_directions.get(last_position, set()):
+                        continue
+
+                    nx, ny, rotated_room, success = try_place_room(
+                        last_room, base_room, current_position, direction, allow_any_passage=(last_room == "start")
+                    )
                     if success:
+                        explored_directions.setdefault(last_position, set()).add(direction)
                         current_position = (nx, ny)
                         current_room = rotated_room
                         room_count += 1
+                        placed = True
                         break
-                else:
-                    print(f"Failed to place a rotated version of {last_room}. Continuing backtracking.")
-            else:
-                print("Bad dungeon: could not connect to any available room.")
+
+            if backtrack_count >= backtrack_limit:
+                print("Backtracking limit reached. Exiting...")
                 return used_positions
 
+            if not placed:
+                print("Failed to place any room after backtracking.")
+                return used_positions
+
+    # Mark the last room as the "end" tile
+    if used_positions:
+        last_room_position = list(used_positions.keys())[-1]
+        used_positions[last_room_position] = "end"
+        print(f"The 'end' tile has been placed at position {last_room_position}.")
+
     return used_positions
+
+
