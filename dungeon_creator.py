@@ -59,7 +59,15 @@ connections = {
     # j = 14
     "j1": {"top": "big", "bottom": "big"},
     "j2": {"left": "big", "right": "big"},
-    
+
+    "k1": {"left": "small", "right": "small", "top": "small", "bottom": "small"},
+    "m1": {"left": "small", "right": "small", "top": "small", "bottom": "small"},
+    "p1": {"left": "small", "right": "small", "top": "small", "bottom": "small"},
+    "s1": {"left": "small", "right": "small", "top": "small", "bottom": "small"},
+    "t1": {"left": "small", "right": "small", "top": "small", "bottom": "small"},
+    "w1": {"left": "small", "right": "small", "top": "small", "bottom": "small"},
+    "x1": {"left": "small", "right": "small", "top": "small", "bottom": "small"},
+    "z1": {"left": "small", "right": "small", "top": "small", "bottom": "small"}
 
 }
 
@@ -98,12 +106,20 @@ room_types = {
     "i3": {"type": "corridor"},
     "i4": {"type": "corridor"},
     "j1": {"type": "corridor"},
-    "j2": {"type": "corridor"}
+    "j2": {"type": "corridor"},
+    "k1": {"type": "room"},
+    "m1": {"type": "room"},
+    "p1": {"type": "room"},
+    "s1": {"type": "room"},
+    "t1": {"type": "room"},
+    "w1": {"type": "room"},
+    "x1": {"type": "room"},
+    "z1": {"type": "room"}
 }
 
 room_counts = {
-    "start": 0, "a": 11, "b": 4, "c": 12, "d": 16, "e": 14, "f": 7, "g": 6, "h": 18, "i": 11, "j": 14
-    #"start": 0, "a": 0, "b": 0, "c": 0, "d": 0, "e": 0, "f": 0, "g": 0, "h": 0, "i": 0, "j": 50
+    "start": 0, "a": 11, "b": 4, "c": 12, "d": 16, "e": 14, "f": 7, "g": 6, "h": 18, "i": 11, "j": 14, "k": 5, "m": 10, "p": 4, "s": 10, "t": 5, "w": 5, "x": 4, "z": 5
+    #"start": 0, "a": 0, "b": 0, "c": 0, "d": 0, "e": 0, "f": 0, "g": 0, "h": 0, "i": 0, "j": 50, "k": 0, "m": 0, "p": 0, "s": 0, "t": 0, "w": 0, "x": 0, "z": 0
 }
 
 rotation_map = {room: base for base in room_counts for room in connections if room.startswith(base)}
@@ -182,22 +198,33 @@ def check_all_connections(current_position, new_room):
 def try_place_room(current_room, base_room, current_position, direction):
     global room_counts
     rotations = [r for r in connections if r.startswith(base_room)]
+    directions = ["top", "right", "bottom", "left"]
 
-    for rotated_room in rotations:
-        if rotated_room == "start":
-            continue
-
+    for _ in range(len(directions)):
         nx, ny = get_adjacent_position(current_position[0], current_position[1], direction)
         if (0 <= nx < len(map_grid)) and (0 <= ny < len(map_grid[0])) and (nx, ny) not in used_positions:
-            if compatible_connection(current_room, rotated_room, direction):
-                if check_all_connections((nx, ny), rotated_room):
-                    map_grid[nx][ny] = rotated_room
-                    used_positions[(nx, ny)] = rotated_room
-                    room_counts[base_room] -= 1
-                    print(f"Connecting room {current_room} to room {rotated_room} from the {direction}. Drawn room: {rotated_room}")
-                    return (nx, ny, rotated_room, True)
+            for rotated_room in rotations:
+                if rotated_room == "start":
+                    continue
+                if compatible_connection(current_room, rotated_room, direction):
+                    if check_all_connections((nx, ny), rotated_room):
+                        map_grid[nx][ny] = rotated_room
+                        used_positions[(nx, ny)] = rotated_room
+                        room_counts[base_room] -= 1
+                        print(f"Placed room {rotated_room} at {(nx, ny)} in direction {direction}")
+                        return (nx, ny, rotated_room, True)
 
+        direction = directions[(directions.index(direction) + 1) % len(directions)]
+
+    print(f"Failed to place room {base_room} from {current_position} in any direction.")
     return (None, None, None, False)
+
+
+def rotate_direction(direction):
+    """Rotate direction clockwise: top -> right -> bottom -> left -> top."""
+    order = ["top", "right", "bottom", "left"]
+    idx = order.index(direction)
+    return order[(idx + 1) % len(order)]
 
 
 

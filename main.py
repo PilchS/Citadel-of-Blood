@@ -1,5 +1,5 @@
 import tkinter as tk
-from dungeon_creator import create_dungeon, room_types, room_counts
+from dungeon_creator import create_dungeon, room_types
 from dungeon_visualizer import load_tiles, draw_dungeon_visualization
 from PIL import ImageTk
 from collections import deque
@@ -51,10 +51,9 @@ def main():
     root.title("Dungeon Visualizer")
     root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
     root.resizable(False, False)
-
     root.config(bg="#2E2E2E")
 
-    frame = tk.Frame(root, bg="#000000")
+    frame = tk.Frame(root, bg="#1E1E1E")
     frame.pack(fill=tk.BOTH, expand=True)
 
     canvas_width = WINDOW_WIDTH - 2 * CANVAS_MARGIN
@@ -63,22 +62,35 @@ def main():
     canvas = tk.Canvas(frame, bg="#1E1E1E", width=canvas_width, height=canvas_height)
     canvas.pack(side=tk.TOP, pady=CANVAS_MARGIN)
 
-    button_frame = tk.Frame(root, bg="#000000")
-    button_frame.pack(side=tk.BOTTOM, fill=tk.X)
+    button_frame = tk.Frame(root, bg="#2E2E2E")
+    button_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=0)
+
+    button_container = tk.Frame(button_frame, bg="#2E2E2E")
+    button_container.pack(side=tk.BOTTOM, pady=5)
 
     reveal_button = tk.Button(
-        button_frame,
+        button_container,
         text="Reveal Next Room",
-        command=None,
         bg="#3A3A3A",
         fg="white",
         relief="flat",
         height=2,
     )
-    reveal_button.pack(pady=5)
+    reveal_button.pack(side=tk.LEFT, padx=10)
+
+    lost_button = tk.Button(
+        button_container,
+        text="I lost to the enemy",
+        bg="#FF4C4C",
+        fg="white",
+        relief="flat",
+        height=2,
+        state=tk.DISABLED,
+    )
+    lost_button.pack(side=tk.LEFT, padx=10)
 
     tiles = load_tiles()
-    used_positions = create_dungeon(10)
+    used_positions = create_dungeon(50)
     if not used_positions:
         print("Dungeon creation failed.")
         reveal_button.config(state=tk.DISABLED)
@@ -122,6 +134,8 @@ def main():
 
         if room_type == "corridor" and random.randint(1, 6) == 1:
             active_enemy_position = position
+        elif room_type != "corridor" and random.randint(1, 2) == 1:
+            active_enemy_position = position
         else:
             active_enemy_position = None
 
@@ -145,6 +159,25 @@ def main():
                 tag="enemy",
             )
 
+    def check_proximity_to_enemy():
+        if active_enemy_position:
+            px, py = player_position
+            ex, ey = active_enemy_position
+            distance = abs(px - ex) + abs(py - ey)
+            if distance == 1:
+                lost_button.config(state=tk.NORMAL)
+            else:
+                lost_button.config(state=tk.DISABLED)
+        else:
+            lost_button.config(state=tk.DISABLED)
+
+    def handle_loss():
+        lost_button.config(state=tk.DISABLED)
+        reveal_button.config(state=tk.DISABLED)
+        print("Player lost to the enemy!")
+
+    lost_button.config(command=handle_loss)
+
     def move_player():
         nonlocal player_position, active_enemy_position
         if path_to_target:
@@ -152,8 +185,7 @@ def main():
             player_position = next_step
 
             if player_position == active_enemy_position:
-                canvas.delete("enemy")
-                active_enemy_position = None
+                pass
 
             if used_positions.get(player_position) == "end":
                 print("Player has reached the 'end' tile.")
@@ -171,6 +203,8 @@ def main():
             draw_player(player_position)
             draw_enemy()
             canvas.update()
+
+            check_proximity_to_enemy()
             return True
         return False
 
@@ -210,6 +244,8 @@ def main():
 
             draw_dungeon()
             draw_player(player_position)
+
+            check_proximity_to_enemy()
         else:
             print("All rooms revealed.")
             reveal_button.config(state=tk.DISABLED)
@@ -224,4 +260,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
