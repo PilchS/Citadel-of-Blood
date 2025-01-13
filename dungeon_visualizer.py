@@ -25,7 +25,6 @@ def draw_dungeon_visualization(used_positions, tiles, window_width, window_heigh
     offset_y = window_height // 2
     start_x, start_y = starting_position
 
-    # Create a blank image with a transparent background
     canvas = Image.new("RGBA", (window_width, window_height), (255, 255, 255, 0))
 
     for (x, y), room in used_positions.items():
@@ -47,11 +46,9 @@ def draw_dungeon_visualization(used_positions, tiles, window_width, window_heigh
         tile = tiles[base_room]
         rotated_tile = rotate_tile(tile, rotation_suffix)
 
-        # Calculate position on canvas
         pos_x = offset_x + (y - start_y) * tile_size
         pos_y = offset_y + (x - start_x) * tile_size
 
-        # Paste the tile onto the canvas
         canvas.paste(rotated_tile, (pos_x, pos_y), rotated_tile)
 
     return canvas

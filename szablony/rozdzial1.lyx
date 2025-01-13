@@ -1,0 +1,570 @@
+#LyX 1.6.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass aghdpl
+\options pdflatex
+\use_default_options false
+\language polish
+\inputencoding latin2
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize 11
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 0
+\use_esint 0
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language polish
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Chapter
+Wprowadzenie
+\begin_inset CommandInset label
+LatexCommand label
+name "cha:wprowadzenie"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Motywacja
+\end_layout
+
+\begin_layout Standard
+Pisząc od lat w systemie LaTeX jakiś czas temu odkryłem dla siebie edytor
+ LyX.
+ Pozwala mi on zapomnieć o makrodefinicjach znakomitego skądinąnd systemu
+ składu LaTeX i skupić się na treści pracy.
+ Edytor LyX osobom mniej obeznanym z systemami TeX i LaTeX pozwala na 
+\begin_inset Quotes pld
+\end_inset
+
+szybkie wejście
+\begin_inset Quotes prd
+\end_inset
+
+ w krainę doskonałej jakości dokumentów.
+ W szczególności LyX dobrze nadaję się do pisania w nim prac dyplomowych
+ i magisterskich.
+ Mając to na uwadzę dopisałem odpowiednie rozszerzenia współpracujące ze
+ stylem 
+\family typewriter
+aghdpl
+\family default
+ przygotowanym przez panów dr G.
+ J.
+ Nalepę i dr hab.
+ M.
+ Szpyrkę, umożliwiające tworzenie prac z wykorzystaniem edytora LyX.
+ Więcej o instalacji dodatków LyX do pakietu 
+\family typewriter
+aghdpl 
+\family default
+można przeczytać w
+\begin_inset space ~
+\end_inset
+
+sekcji 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Instalacja-pakietu-aghdpl"
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Section
+LaTeX
+\end_layout
+
+\begin_layout Standard
+LaTeX
+\begin_inset space ~
+\end_inset
+
+jest systemem składu umożliwiającym tworzenie dowolnego typu dokumentów
+ (w
+\begin_inset space ~
+\end_inset
+
+szczególności naukowych i technicznych) o wysokiej jakości typograficznej
+ (
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Dil00"
+
+\end_inset
+
+, 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Lam92"
+
+\end_inset
+
+).
+ Wysoka jakość składu jest niezależna od rozmiaru dokumentu -- zaczynając
+ od krótkich listów do bardzo grubych książek.
+ LaTeX
+\begin_inset space ~
+\end_inset
+
+automatyzuje wiele prac związanych ze składaniem dokumentów np.: referencje,
+ cytowania, generowanie spisów (treśli, rysunków, symboli itp.) itd.
+\end_layout
+
+\begin_layout Standard
+LaTeX
+\begin_inset space ~
+\end_inset
+
+jest zestawem instrukcji umożliwiających autorom skład i wydruk ich prac
+ na najwyższym poziomie typograficznym.
+ Do formatowania dokumentu LaTeX
+\begin_inset space ~
+\end_inset
+
+stosuje TeX a (wymiawamy 'tech' -- greckie litery 
+\begin_inset Formula $\tau$
+\end_inset
+
+, 
+\begin_inset Formula $\epsilon$
+\end_inset
+
+, 
+\begin_inset Formula $\chi$
+\end_inset
+
+).
+ Korzystając z
+\begin_inset space ~
+\end_inset
+
+systemu składu LaTeX
+\begin_inset space ~
+\end_inset
+
+mamy za zadanie przygotować jedynie tekst źródłowy, cały ciężar składania,
+ formatowania dokumentu przejmuje na siebie system.
+\end_layout
+
+\begin_layout Section
+LyX
+\end_layout
+
+\begin_layout Standard
+LyX jest edytorem klasy WYSWIM (What you see is what you mean) umożliwiającym
+ względnie łatwe pisanie tekstów w
+\begin_inset space ~
+\end_inset
+
+standarcie LaTeX, bez konieczności ciągłego posługiwania się makrodefinicjami
+ LaTeX'a.
+ Przy czym w każdej chwili można wstawić dowolne wyrażenie TeX'a, stąd jest
+ to jeden z niewielu edytorów, który nieogranicza możliwości piszącego,
+ a tylko je rozszerza.
+ LyX posiada bardzo dobry podręcznik dostarczany z programem.
+ Ułatwia posługiwanie się referencjami, wstawianie rysunków oraz tworzenie
+ w trybie graficznym formuł matematycznych (rys.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Flo:lyx-jest-cool"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename einstein55.jpg
+	scale 90
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Moim zdaniem praca z LyX'em jest przyjemna :)
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "Flo:lyx-jest-cool"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Instalacja pakietu aghdpl w środowisku edytora LyX
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Instalacja-pakietu-aghdpl"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:instalacja"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Niestety aby móc używać edytora LyX w połączeniu z przygotowanym przez panów
+ dr G.
+ J.
+ Nalepę i dr hab.
+ M.
+ Szpyrkę środowiska LaTeX'a aghdpl trzeba nieco zmodyfikować standardowe
+ pliki konfiguracyjne LyX'a.
+ Najpierw trzeba rozpakować archiwum ściągnięte ze strony:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\small\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+tar -xvzf aghdpl-with-lyx.tgz
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+następnie wejść do rozpakowanego katalogu:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\small\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+cd aghdpl-with-lyx
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+i skopiować plik 
+\family typewriter
+aghdpl.layout
+\family default
+ do katalogu plików layout edytora LyX.
+ Zwykle znajduję się on w katalogu aplikacji.
+ Pod systemem Mac OS X katalog docelowy to: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\small\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+/Applications/LyX.app/Contents/Resources/layouts
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Zawartość tego katalogu powinna wyglądać mniej więcej tak:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\small\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+localhost:layouts konrad$ ls -la total 1720 
+\end_layout
+
+\begin_layout Plain Layout
+
+drwxr-xr-x  154 konrad  admin   5236  1 cze 09:59 .
+ 
+\end_layout
+
+\begin_layout Plain Layout
+
+drwxr-xr-x   57 konrad  admin   1938 15 mar  2009 ..
+ 
+\end_layout
+
+\begin_layout Plain Layout
+
+-rw-r--r--    1 konrad  admin   9513 15 mar  2009 IEEEtran.layout 
+\end_layout
+
+\begin_layout Plain Layout
+
+-rw-r--r--    1 konrad  admin   6076 15 mar  2009 aa.layout 
+\end_layout
+
+\begin_layout Plain Layout
+
+-rw-r--r--    1 konrad  admin   2761 15 mar  2009 aapaper.inc 
+\end_layout
+
+\begin_layout Plain Layout
+
+-rw-r--r--    1 konrad  admin   3458 15 mar  2009 aapaper.layout 
+\end_layout
+
+\begin_layout Plain Layout
+
+-rw-r--r--    1 konrad  admin  13671 15 mar  2009 aastex.layout 
+\end_layout
+
+\begin_layout Plain Layout
+
+-rw-r--r--    1 konrad  admin   3089 15 mar  2009 achemso.layout 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Po skopiowaniu pliku z layoutem trzeba wyedytować plik: 
+\family typewriter
+textclass.lst
+\family default
+, który można znaleźć (znowu Mac OS X)
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Osobiście używam sprzętu Apple, stąd przykłady ścieżek dla Mac OS X'a.
+ Jestem jednak pewien, że w innych środowiskach państwo sobie poradzą z
+ odnalezieniem właściwych plików i katalogów.
+\end_layout
+
+\end_inset
+
+ w katalogu
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\small\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+~/Library/Application
+\backslash
+ Support/LyX-1.6/
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+i dopisać w ostatniej linii:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\small\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+"aghdpl" "aghdpl" "AGH (Praca Dyplomowa)" "true"
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Od tej pory w opcjach konfiguracji dokumentu w środowisku LyX powinien być
+ dostępny styl 
+\begin_inset Quotes pld
+\end_inset
+
+AGH (Praca Dyplomowa)
+\begin_inset Quotes prd
+\end_inset
+
+ (zobacz rys.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Flo:agh-praca-dyplomowa"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename lyx2.png
+	scale 35
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Styl 
+\begin_inset Quotes pld
+\end_inset
+
+AGH (Praca Dyplomowa)
+\begin_inset Quotes prd
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "Flo:agh-praca-dyplomowa"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Zawartość pracy
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:zawartoscPracy"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+W rodziale
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "cha:wprowadzenie"
+
+\end_inset
+
+ przedstawiono podstawowe informacje dotyczące struktury dokumentów w LaTeX
+ u.
+\end_layout
+
+\end_body
+\end_document

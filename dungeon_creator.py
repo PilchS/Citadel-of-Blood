@@ -210,7 +210,6 @@ def try_place_room(current_room, base_room, current_position, direction):
 
 
 def rotate_direction(direction):
-    """Rotate direction clockwise: top -> right -> bottom -> left -> top."""
     order = ["top", "right", "bottom", "left"]
     idx = order.index(direction)
     return order[(idx + 1) % len(order)]
@@ -228,7 +227,7 @@ def create_dungeon(max_rooms):
 
     room_counts["start"] = 0
 
-    path = []  # Stack to track placed rooms
+    path = []
     room_count = 1
 
     while room_count < max_rooms:
@@ -240,7 +239,6 @@ def create_dungeon(max_rooms):
         placed = False
         attempted_directions = set()
 
-        # Attempt to place a room by exploring all possible directions
         while not placed and len(attempted_directions) < 4:
             base_room = random.choice(possible_rooms)
             direction = random.choice(["top", "right", "bottom", "left"])
