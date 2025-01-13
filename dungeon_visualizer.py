@@ -1,4 +1,4 @@
-from PIL import Image
+from PIL import Image, ImageDraw
 from dungeon_creator import room_counts
 import os
 
@@ -10,26 +10,22 @@ def load_tiles():
     for tile in os.listdir("tiles"):
         if tile.endswith(".png"):
             tile_name = tile.split(".")[0]
-            if tile_name == "end":
-                # Ensure proper alpha handling for 'end' tile
-                tiles[tile_name] = Image.open(f"tiles/{tile}").convert("RGBA")
-            else:
-                tiles[tile_name] = Image.open(f"tiles/{tile}").convert("RGBA")
+            tiles[tile_name] = Image.open(f"{tile_folder}/{tile}").convert("RGBA")
     return tiles
 
-
 def rotate_tile(tile, rotation_suffix):
+    if rotation_suffix is None:
+        return tile
     angle = -90 * (int(rotation_suffix) - 1)
     return tile.rotate(angle, expand=True)
 
 def draw_dungeon_visualization(used_positions, tiles, window_width, window_height, starting_position):
     tile_size = 53
-
     offset_x = window_width // 2
     offset_y = window_height // 2
-
     start_x, start_y = starting_position
 
+    # Create a blank image with a transparent background
     canvas = Image.new("RGBA", (window_width, window_height), (255, 255, 255, 0))
 
     for (x, y), room in used_positions.items():
@@ -49,11 +45,13 @@ def draw_dungeon_visualization(used_positions, tiles, window_width, window_heigh
             continue
 
         tile = tiles[base_room]
-        rotated_tile = rotate_tile(tile, rotation_suffix) if rotation_suffix else tile
+        rotated_tile = rotate_tile(tile, rotation_suffix)
 
+        # Calculate position on canvas
         pos_x = offset_x + (y - start_y) * tile_size
         pos_y = offset_y + (x - start_x) * tile_size
 
+        # Paste the tile onto the canvas
         canvas.paste(rotated_tile, (pos_x, pos_y), rotated_tile)
 
     return canvas

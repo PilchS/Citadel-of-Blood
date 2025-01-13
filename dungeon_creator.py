@@ -1,62 +1,51 @@
 import random
 
 connections = {
-    # start = 1
     "start": {"top": "any", "bottom": "any", "left": "any", "right": "any"},
 
     "end": {"top": "any", "bottom": "any", "left": "any", "right": "any"},
 
-    # a = 11
     "a1": {"right": "small"},
     "a2": {"bottom": "small"},
     "a3": {"left": "small"},
     "a4": {"top": "small"},
 
-    # b = 4
     "b1": {"right": "small", "bottom": "small"},
     "b2": {"left": "small", "bottom": "small"},
     "b3": {"left": "small", "top": "small"},
     "b4": {"right": "small", "top": "small"},
 
-    # c = 12
     "c1": {"left": "big", "top": "big", "bottom": "small"},
     "c2": {"left": "small", "right": "big", "top": "big"},
     "c3": {"right": "big", "top": "small", "bottom": "big"},
     "c4": {"left": "big", "right": "small", "bottom": "big"},
 
-    # d = 16
     "d1": {"left": "big", "right": "big", "bottom": "small"},
     "d2": {"left": "small", "top": "big", "bottom": "big"},
     "d3": {"left": "big", "right": "big", "top": "small"},
     "d4": {"right": "small", "top": "big", "bottom": "big"},
 
-    # e = 14
     "e1": {"left": "big", "right": "big", "top": "small", "bottom": "small"},
     "e2": {"left": "small", "right": "small", "top": "big", "bottom": "big"},
 
-    # f = 7
     "f1": {"top": "small", "bottom": "small"},
     "f2": {"left": "small", "right": "small"},
 
-    # g = 6
     "g1": {"left": "small", "right": "big", "bottom": "big"},
     "g2": {"left": "big", "top": "small", "bottom": "big"},
     "g3": {"left": "big", "right": "small", "top": "big"},
     "g4": {"right": "big", "top": "big", "bottom": "small"},
 
-    # h = 18
     "h1": {"left": "big", "bottom": "big"},
     "h2": {"left": "big", "top": "big"},
     "h3": {"right": "big", "top": "big"},
     "h4": {"right": "big", "bottom": "big"},
 
-    # i = 11
     "i1": {"left": "big", "right": "small", "top": "small", "bottom": "big"},
     "i2": {"left": "big", "right": "small", "top": "big", "bottom": "small"},
     "i3": {"left": "small", "right": "big", "top": "big", "bottom": "small"},
     "i4": {"left": "small", "right": "big", "top": "small", "bottom": "big"},
 
-    # j = 14
     "j1": {"top": "big", "bottom": "big"},
     "j2": {"left": "big", "right": "big"},
 
@@ -239,9 +228,8 @@ def create_dungeon(max_rooms):
 
     room_counts["start"] = 0
 
-    path = []
+    path = []  # Stack to track placed rooms
     room_count = 1
-    backtrack_limit = 50
 
     while room_count < max_rooms:
         possible_rooms = [r for r, count in room_counts.items() if count > 0]
@@ -249,51 +237,53 @@ def create_dungeon(max_rooms):
             print("No available rooms left to draw.")
             break
 
-        base_room = random.choice(possible_rooms)
         placed = False
         attempted_directions = set()
 
-        for direction in connections[current_room]:
+        # Attempt to place a room by exploring all possible directions
+        while not placed and len(attempted_directions) < 4:
+            base_room = random.choice(possible_rooms)
+            direction = random.choice(["top", "right", "bottom", "left"])
+
             if direction in attempted_directions:
                 continue
+
             attempted_directions.add(direction)
+            nx, ny = get_adjacent_position(current_position[0], current_position[1], direction)
 
-            nx, ny, placed_room, placed = try_place_room(current_room, base_room, current_position, direction)
+            if (0 <= nx < len(map_grid)) and (0 <= ny < len(map_grid[0])) and (nx, ny) not in used_positions:
+                rotations = [r for r in connections if r.startswith(base_room)]
 
-            if placed:
-                path.append((current_position, current_room))
-                current_position = (nx, ny)
-                current_room = placed_room
-                room_count += 1
-                break
+                for rotated_room in rotations:
+                    if rotated_room == "start":
+                        continue
+                    if compatible_connection(current_room, rotated_room, direction):
+                        if check_all_connections((nx, ny), rotated_room):
+                            map_grid[nx][ny] = rotated_room
+                            used_positions[(nx, ny)] = rotated_room
+                            room_counts[base_room] -= 1
+                            print(f"Placed room {rotated_room} at {(nx, ny)} in direction {direction}")
+                            path.append((current_position, current_room))
+                            current_position = (nx, ny)
+                            current_room = rotated_room
+                            room_count += 1
+                            placed = True
+                            break
 
         if not placed:
-            backtrack_count = 0
-            while not placed and path and backtrack_count < backtrack_limit:
-                print("Backtracking...")
-                last_position, last_room = random.choice(path)
-                current_position = last_position
-                base_room = rotation_map[last_room]
-                backtrack_count += 1
+            print("Backtracking...")
+            if not path:
+                print("No rooms to backtrack to. Exiting...")
+                break
 
-                for direction in connections[last_room]:
-                    nx, ny, rotated_room, success = try_place_room(last_room, base_room, current_position, direction)
-                    if success:
-                        current_position = (nx, ny)
-                        current_room = rotated_room
-                        room_count += 1
-                        placed = True
-                        break
+            last_position, last_room = path.pop()
+            current_position = last_position
+            current_room = last_room
 
-            if backtrack_count >= backtrack_limit:
-                print("Backtracking limit reached. Exiting...")
-                return used_positions
+    if used_positions:
+        last_room_position = list(used_positions.keys())[-1]
+        used_positions[last_room_position] = "end"
+        map_grid[last_room_position[0]][last_room_position[1]] = "end"
+        print(f"End room placed at {last_room_position}.")
 
-            if not placed:
-                print("Failed to place any room after backtracking.")
-                return used_positions
-            
-            if used_positions:
-                last_room_position = list(used_positions.keys())[-1]
-                used_positions[last_room_position] = "end"
     return used_positions

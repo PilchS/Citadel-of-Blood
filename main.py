@@ -213,6 +213,7 @@ def main():
         dungeon_image = draw_dungeon_visualization(
             dict(revealed_rooms), tiles, canvas_width, canvas_height, starting_room_position
         )
+
         dungeon_image_tk = ImageTk.PhotoImage(dungeon_image)
         canvas.create_image(
             canvas_center_x, canvas_center_y, anchor="center", image=dungeon_image_tk
@@ -220,6 +221,7 @@ def main():
         canvas.image = dungeon_image_tk
 
         draw_enemy()
+
 
     def reveal_next_room():
         nonlocal dungeon_image, path_to_target, target_position
