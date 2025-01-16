@@ -46,8 +46,8 @@ connections = {
     "i3": {"left": "small", "right": "big", "top": "big", "bottom": "small"},
     "i4": {"left": "small", "right": "big", "top": "small", "bottom": "big"},
 
-    "j1": {"top": "big", "bottom": "big"},
-    "j2": {"left": "big", "right": "big"},
+    "j1": {"left": "big", "right": "big"},
+    "j2": {"top": "big", "bottom": "big"},   
 
     "k1": {"left": "small", "right": "small", "top": "small", "bottom": "small"},
     "m1": {"left": "small", "right": "small", "top": "small", "bottom": "small"},
@@ -108,7 +108,7 @@ room_types = {
 
 room_counts = {
     "start": 0, "a": 11, "b": 4, "c": 12, "d": 16, "e": 14, "f": 7, "g": 6, "h": 18, "i": 11, "j": 14, "k": 5, "m": 10, "p": 4, "s": 10, "t": 5, "w": 5, "x": 4, "z": 5
-    #"start": 0, "a": 0, "b": 0, "c": 0, "d": 0, "e": 0, "f": 0, "g": 0, "h": 0, "i": 0, "j": 50, "k": 0, "m": 0, "p": 0, "s": 0, "t": 0, "w": 0, "x": 0, "z": 0
+    #"start": 0, "a": 10, "b": 0, "c": 0, "d": 0, "e": 0, "f": 0, "g": 0, "h": 0, "i": 0, "j": 0, "k": 0, "m": 0, "p": 0, "s": 0, "t": 0, "w": 0, "x": 0, "z": 0
 }
 
 rotation_map = {room: base for base in room_counts for room in connections if room.startswith(base)}
@@ -125,7 +125,7 @@ def draw_starting_room():
     predefined_start_room = "start"
     map_grid[start_x][start_y] = predefined_start_room
     used_positions[(start_x, start_y)] = predefined_start_room
-    room_counts[predefined_start_room] = 0  # Mark as used
+    room_counts[predefined_start_room] = 0
     print(f"Starting room drawn: {predefined_start_room}")
     return predefined_start_room
 
@@ -151,10 +151,17 @@ def opposite_direction(direction):
 
 
 def compatible_connection(current_room, next_room, direction):
-    if current_room == "start" or next_room == "start":
-        return True
-
     opposite_dir = opposite_direction(direction)
+
+    if current_room == "start":
+        if direction in connections["start"]:
+            return connections["start"][direction] == "any" and opposite_dir in connections[next_room]
+        return False
+
+    if next_room == "start":
+        if opposite_dir in connections["start"]:
+            return connections["start"][opposite_dir] == "any" and direction in connections[current_room]
+        return False
 
     if direction in connections[current_room] and opposite_dir in connections[next_room]:
         current_conn = connections[current_room][direction]
@@ -163,6 +170,8 @@ def compatible_connection(current_room, next_room, direction):
         return current_conn == "any" or next_conn == "any" or current_conn == next_conn
 
     return False
+
+
 
 
 def check_all_connections(current_position, new_room):
