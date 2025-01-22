@@ -5,7 +5,6 @@ from PIL import ImageTk
 from collections import deque
 import random
 
-
 def bfs_shortest_path(start, target, used_positions):
     queue = deque([(start, [])])
     visited = set()
@@ -39,10 +38,9 @@ def bfs_shortest_path(start, target, used_positions):
 
     return []
 
-
 def main():
-    WINDOW_WIDTH = 800
-    WINDOW_HEIGHT = 800
+    WINDOW_WIDTH = 600
+    WINDOW_HEIGHT = 600
     BUTTON_HEIGHT = 40
     CANVAS_MARGIN = 10
 
@@ -53,16 +51,83 @@ def main():
     root.resizable(False, False)
     root.config(bg="#2E2E2E")
 
-    frame = tk.Frame(root, bg="#1E1E1E")
-    frame.pack(fill=tk.BOTH, expand=True)
+
+    player_stats = {
+        "Name": "string",
+        "Race": "string",
+        "Ability": "integer",
+        "Strength": "integer",
+        "Spells": "string",
+        "Magical Potential": "integer",
+        "Magical Items": "string",
+        "Resistance": "integer",
+        "Gold": "integer",
+        "Agility": "integer",
+        "Weapon": "string",
+        "Experience Points": "integer",
+        "Proficiency": "string",
+        "Valuables": "string",
+    }
+
+    stats_frame = tk.Frame(root, bg="#1E1E1E")
+    stats_frame.pack(fill=tk.BOTH, expand=True)
+
+    stats_entries = {}
+    error_label = tk.Label(stats_frame, text="", bg="#1E1E1E", fg="red")
+    error_label.grid(row=len(player_stats) + 1, column=0, columnspan=2, pady=10)
+
+    def start_game():
+        nonlocal player_stats
+
+        errors = []
+        for stat, (expected_type, entry) in stats_entries.items():
+            value = entry.get()
+            if expected_type == "integer":
+                if not value.isdigit():
+                    errors.append(f"{stat} must be an integer.")
+                    continue
+                player_stats[stat] = int(value)
+            else:
+                player_stats[stat] = value if value else ""
+
+        player_stats["Gold"] = player_stats.get("Gold", 0) or 0
+        player_stats["Experience Points"] = player_stats.get("Experience Points", 0) or 0
+
+        if errors:
+            error_label.config(text="\n".join(errors))
+            return
+
+        error_label.config(text="")
+        stats_frame.pack_forget()
+        game_frame.pack(fill=tk.BOTH, expand=True)
+
+    for idx, (stat, expected_type) in enumerate(player_stats.items()):
+        label = tk.Label(stats_frame, text=f"{stat} ({expected_type}):", bg="#1E1E1E", fg="white")
+        label.grid(row=idx, column=0, sticky="w", padx=10, pady=5)
+
+        entry = tk.Entry(stats_frame, bg="#3A3A3A", fg="white", relief="flat")
+        entry.grid(row=idx, column=1, padx=10, pady=5)
+        stats_entries[stat] = (expected_type, entry)
+
+    start_button = tk.Button(
+        stats_frame,
+        text="Start Game",
+        bg="#3A3A3A",
+        fg="white",
+        relief="flat",
+        command=start_game,
+    )
+    start_button.grid(row=len(player_stats), column=0, columnspan=2, pady=10)
+
+    game_frame = tk.Frame(root, bg="#1E1E1E")
 
     canvas_width = WINDOW_WIDTH - 2 * CANVAS_MARGIN
     canvas_height = WINDOW_HEIGHT - BUTTON_HEIGHT - 2 * CANVAS_MARGIN
 
-    canvas = tk.Canvas(frame, bg="#1E1E1E", width=canvas_width, height=canvas_height)
+    canvas = tk.Canvas(game_frame, bg="#1E1E1E", width=canvas_width, height=canvas_height)
     canvas.pack(side=tk.TOP, pady=CANVAS_MARGIN)
 
-    button_frame = tk.Frame(root, bg="#2E2E2E")
+    button_frame = tk.Frame(game_frame, bg="#2E2E2E")
     button_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=0)
 
     button_container = tk.Frame(button_frame, bg="#2E2E2E")
@@ -90,7 +155,7 @@ def main():
     lost_button.pack(side=tk.LEFT, padx=10)
 
     tiles = load_tiles()
-    used_positions = create_dungeon(50)
+    used_positions = create_dungeon(10)
     if not used_positions:
         print("Dungeon creation failed.")
         reveal_button.config(state=tk.DISABLED)
@@ -130,11 +195,11 @@ def main():
 
     def spawn_enemy(position):
         nonlocal active_enemy_position
-        room_type = room_types[used_positions[position]]["type"]
+        room_type = room_types[used_positions[position]]['type']
 
-        if room_type == "corridor" and random.randint(1, 6) == 1:
+        if room_type == 'corridor' and random.randint(1, 6) == 1:
             active_enemy_position = position
-        elif room_type != "corridor" and random.randint(1, 2) == 1:
+        elif room_type != 'corridor' and random.randint(1, 2) == 1:
             active_enemy_position = position
         else:
             active_enemy_position = None
@@ -175,6 +240,9 @@ def main():
         lost_button.config(state=tk.DISABLED)
         reveal_button.config(state=tk.DISABLED)
         print("Player lost to the enemy!")
+        print("Player Statistics:")
+        for stat, value in player_stats.items():
+            print(f"{stat}: {value}")
 
     lost_button.config(command=handle_loss)
 
@@ -189,6 +257,9 @@ def main():
 
             if used_positions.get(player_position) == "end":
                 print("Player has reached the 'end' tile.")
+                print("Player Statistics:")
+                for stat, value in player_stats.items():
+                    print(f"{stat}: {value}")
                 canvas.create_text(
                     canvas_center_x,
                     canvas_center_y,
@@ -221,7 +292,6 @@ def main():
         canvas.image = dungeon_image_tk
 
         draw_enemy()
-
 
     def reveal_next_room():
         nonlocal dungeon_image, path_to_target, target_position
@@ -258,7 +328,6 @@ def main():
     draw_player(player_position)
 
     root.mainloop()
-
 
 if __name__ == "__main__":
     main()
