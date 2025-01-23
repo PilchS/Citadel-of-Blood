@@ -157,17 +157,6 @@ def main():
     )
     reveal_button.pack(side=tk.LEFT, padx=10)
 
-    lost_button = tk.Button(
-        button_container,
-        text="I lost to the enemy",
-        bg="#FF4C4C",
-        fg="white",
-        relief="flat",
-        height=2,
-        state=tk.DISABLED,
-    )
-    lost_button.pack(side=tk.LEFT, padx=10)
-
     tiles = load_tiles()
     used_positions = create_dungeon(10)
     if not used_positions:
@@ -329,7 +318,6 @@ def main():
             distance = abs(px - ex) + abs(py - ey)
             
             if distance == 1:
-                lost_button.config(state=tk.NORMAL)
                 
                 player_roll = random.randint(1, 6)
                 enemy_roll = random.randint(1, 6)
@@ -344,14 +332,9 @@ def main():
 
                 if player_total < enemy_total:
                     handle_loss()
-            else:
-                lost_button.config(state=tk.DISABLED)
-        else:
-            lost_button.config(state=tk.DISABLED)
 
     def handle_loss():
         nonlocal dice_rolled, active_enemy_position
-        lost_button.config(state=tk.DISABLED)
         reveal_button.config(state=tk.DISABLED)
         canvas.delete("dice_result")
         canvas.delete("enemy_info")
@@ -366,8 +349,6 @@ def main():
         print("Player Statistics:")
         for stat, value in player_stats.items():
             print(f"{stat}: {value}")
-
-    lost_button.config(command=handle_loss)
 
     def move_player():
         nonlocal player_position, active_enemy_position
