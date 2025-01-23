@@ -5,6 +5,8 @@ from PIL import ImageTk
 from collections import deque
 import random
 
+
+
 def bfs_shortest_path(start, target, used_positions):
     queue = deque([(start, [])])
     visited = set()
@@ -50,7 +52,7 @@ def main():
     root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
     root.resizable(False, False)
     root.config(bg="#2E2E2E")
-
+    dice_rolled = False
 
     player_stats = {
         "Name": "string",
@@ -68,6 +70,18 @@ def main():
         "Proficiency": "string",
         "Valuables": "string",
     }
+
+    
+    enemy_stats = {
+        "Goblin": {"strength": 3, "magic": 1},
+        "Orc": {"strength": 5, "magic": 2},
+        "Dark Wizard": {"strength": 2, "magic": 6},
+        "Skeleton": {"strength": 4, "magic": 1},
+        "Troll": {"strength": 6, "magic": 3},
+        "Vampire": {"strength": 4, "magic": 5},
+    }
+    spawned_enemy = {}
+
 
     stats_frame = tk.Frame(root, bg="#1E1E1E")
     stats_frame.pack(fill=tk.BOTH, expand=True)
@@ -194,7 +208,7 @@ def main():
         )
 
     def spawn_enemy(position):
-        nonlocal active_enemy_position
+        nonlocal active_enemy_position, spawned_enemy
         room_type = room_types[used_positions[position]]['type']
 
         if room_type == 'corridor' and random.randint(1, 6) == 1:
@@ -203,6 +217,90 @@ def main():
             active_enemy_position = position
         else:
             active_enemy_position = None
+
+        if active_enemy_position:
+            if active_enemy_position not in spawned_enemy:
+                enemy_name = random.choice(list(enemy_stats.keys()))
+                spawned_enemy[active_enemy_position] = {
+                    "name": enemy_name,
+                    "stats": enemy_stats[enemy_name]
+                }
+                print(f"Enemy spawned: {enemy_name} at {active_enemy_position}")
+                print(f"Stats: {enemy_stats[enemy_name]}")
+        else:
+            print("No enemy spawned in this room.")
+
+
+
+
+    def roll_dice():
+        nonlocal dice_rolled, active_enemy_position
+        if not active_enemy_position:
+            return
+
+        enemy_dice = random.randint(1, 6)
+        enemy_data = spawned_enemy[active_enemy_position]
+        enemy_strength_total = enemy_data['stats']['strength'] + enemy_dice 
+
+        player_dice = random.randint(1, 6)
+        player_strength_total = player_stats["Strength"] + player_dice
+
+        canvas.delete("dice_result")
+        canvas.create_text(
+            canvas_center_x,
+            canvas_center_y - 50,
+            text=f"Player rolls {player_dice} (Strength +{player_stats['Strength']})",
+            fill="white",
+            font=("Arial", 16),
+            tag="dice_result"
+        )
+        canvas.create_text(
+            canvas_center_x,
+            canvas_center_y - 20,
+            text=f"Enemy rolls {enemy_dice} (Strength +{enemy_data['stats']['strength']})",
+            fill="red",
+            font=("Arial", 16),
+            tag="dice_result"
+        )
+
+        print(f"Player rolls: {player_dice} (Total: {player_strength_total})")
+        print(f"Enemy rolls: {enemy_dice} (Total: {enemy_strength_total})")
+
+        if player_strength_total < enemy_strength_total:
+            print("Player lost to the enemy!")
+            handle_loss()
+        else:
+            print("Player won the encounter!")
+            dice_rolled = False
+
+    def show_rolls_on_canvas(player_roll, enemy_roll):
+        canvas.delete("dice_roll")
+
+        player_roll_x = 100
+        player_roll_y = canvas_height - 50
+
+        enemy_roll_x = canvas_width - 100
+        enemy_roll_y = canvas_height - 50
+
+        canvas.create_text(
+            player_roll_x,
+            player_roll_y,
+            text=f"Player Roll: {player_roll}",
+            fill="green",
+            font=("Arial", 16),
+            tag="dice_roll"
+        )
+
+        canvas.create_text(
+            enemy_roll_x,
+            enemy_roll_y,
+            text=f"Enemy Roll: {enemy_roll}",
+            fill="red",
+            font=("Arial", 16),
+            tag="dice_roll"
+        )
+
+
 
     def draw_enemy():
         if active_enemy_position:
@@ -229,17 +327,42 @@ def main():
             px, py = player_position
             ex, ey = active_enemy_position
             distance = abs(px - ex) + abs(py - ey)
+            
             if distance == 1:
                 lost_button.config(state=tk.NORMAL)
+                
+                player_roll = random.randint(1, 6)
+                enemy_roll = random.randint(1, 6)
+
+                show_rolls_on_canvas(player_roll, enemy_roll)
+
+                player_total = player_stats["Strength"] + player_roll
+                enemy_total = spawned_enemy[active_enemy_position]["stats"]["strength"] + enemy_roll
+
+                print(f"Player Roll: {player_roll} (Total: {player_total})")
+                print(f"Enemy Roll: {enemy_roll} (Total: {enemy_total})")
+
+                if player_total < enemy_total:
+                    handle_loss()
             else:
                 lost_button.config(state=tk.DISABLED)
         else:
             lost_button.config(state=tk.DISABLED)
 
     def handle_loss():
+        nonlocal dice_rolled, active_enemy_position
         lost_button.config(state=tk.DISABLED)
         reveal_button.config(state=tk.DISABLED)
+        canvas.delete("dice_result")
+        canvas.delete("enemy_info")
+        dice_rolled = False
+        active_enemy_position = None
+
         print("Player lost to the enemy!")
+        if active_enemy_position and active_enemy_position in spawned_enemy:
+            enemy_data = spawned_enemy[active_enemy_position]
+            print(f"Enemy was a {enemy_data['name']} with stats: {enemy_data['stats']}")
+
         print("Player Statistics:")
         for stat, value in player_stats.items():
             print(f"{stat}: {value}")
@@ -278,6 +401,7 @@ def main():
             check_proximity_to_enemy()
             return True
         return False
+
 
     def draw_dungeon():
         nonlocal dungeon_image
