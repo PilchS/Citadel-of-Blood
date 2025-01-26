@@ -120,7 +120,7 @@ def start_game():
 def setup_party():
     setup_frame.pack(fill=tk.BOTH, expand=True)
 
-    tk.Label(setup_frame, text="Select Your Party", font=("Arial", 16), fg="white", bg="#333").pack()
+    tk.Label(setup_frame, text="Your Party", font=("Arial", 16), fg="white", bg="#333").pack()
 
     selected_heroes = random.sample(HEROES, 3)
     for hero in selected_heroes:
