@@ -1,438 +1,276 @@
-import tkinter as tk
-from dungeon_creator import create_dungeon, room_types
-from dungeon_visualizer import load_tiles, draw_dungeon_visualization
-from PIL import ImageTk
-from collections import deque
+from heroes import HEROES, create_character_record, load_character_image
+from monsters import MONSTER_CHARACTERISTICS, ROOM_MONSTER_TABLE, WANDERING_MONSTER_TABLE, roll_monster
+from tables import TREASURE_TABLE, COMBAT_RESULTS_TABLE, BRIBERY_TABLE
+from helper_functions import shuffle_and_pick, roll_dice
 import random
+import tkinter as tk
+from PIL import ImageTk, Image
+import os
+import dungeon_gui
+from tkinter import messagebox
+
+IS_GUI_MODE = True
+
+dungeon_data = None
+tiles = None
+tile_iterator = None
 
 
+def roll_dice_expression(expression):
+    try:
+        if ":" in expression:
+            prefix, dice_expr = expression.split(":")
+            prefix = int(prefix)
+            dice_result = roll_dice_expression(dice_expr)
+            return prefix * dice_result
 
-def bfs_shortest_path(start, target, used_positions):
-    queue = deque([(start, [])])
-    visited = set()
+        if "x" in expression:
+            multiplier_expr, dice_expr = expression.split("x")
+            multiplier = roll_dice_expression(multiplier_expr) if "D" in multiplier_expr else int(multiplier_expr)
+            dice_result = roll_dice_expression(dice_expr)
+            return multiplier * dice_result
 
-    while queue:
-        current, path = queue.popleft()
+        parts = expression.split("D")
+        if len(parts) == 2:
+            dice_count = int(parts[0])
+            sides = int(parts[1].split("+")[0]) if "+" in parts[1] else int(parts[1])
+            modifier = int(parts[1].split("+")[1]) if "+" in parts[1] else 0
 
-        if current == target:
-            return path + [current]
+            rolls = [random.randint(1, sides) for _ in range(dice_count)]
+            return sum(rolls) + modifier
 
-        if current in visited:
-            continue
+        return int(expression)
+    except Exception as e:
+        raise ValueError(f"Invalid dice expression: {expression}") from e
 
-        visited.add(current)
 
-        neighbors = []
-        x, y = current
-        directions = {
-            "top": (x - 1, y),
-            "bottom": (x + 1, y),
-            "left": (x, y - 1),
-            "right": (x, y + 1),
-        }
+def setup_initiates(gui_initiates=None):
+    if gui_initiates:
+        print("Setting up initiates from GUI...")
+        return gui_initiates
 
-        for direction, neighbor in directions.items():
-            if neighbor in used_positions and neighbor not in visited:
-                neighbors.append(neighbor)
 
-        for neighbor in neighbors:
-            queue.append((neighbor, path + [current]))
+def combat_sequence(party, monsters, combat_log=None):
+    print("\nCombat Begins!")
 
-    return []
+    party = [character for character in party if character["WP"] > 0]
+
+    def calculate_damage(attacker, weapon):
+        roll = sum(roll_dice(6, 1)) + attacker.get("CB", 0)
+        damage_table = COMBAT_RESULTS_TABLE.get(weapon, COMBAT_RESULTS_TABLE["Monster"])
+        damage = damage_table[min(roll, len(damage_table)) - 1]
+        return damage
+
+    def attack(attacker, defender):
+        max_wp = defender.get("Max WP", defender["WP"])
+        weapon = attacker.get("Weapons", "Monster").split(", ")[0] if "Weapons" in attacker else "Monster"
+        damage = calculate_damage(attacker, weapon)
+        defender["WP"] -= damage
+        combat_message = (
+            f"{attacker['Name']} attacks {defender['Name']} with {weapon}. "
+            f"Damage: {damage}, Remaining WP: {defender['WP']}/{max_wp}"
+        )
+        if combat_log:
+            append_to_combat_log(combat_log, combat_message)
+        print(combat_message)
+        return defender["WP"] <= 0
+
+    while party and monsters:
+        if combat_log:
+            append_to_combat_log(combat_log, "--- Party Turn ---")
+        for character in party[:3]:
+            if monsters:
+                target = monsters[0]
+                if attack(character, target):
+                    if combat_log:
+                        append_to_combat_log(combat_log, f"{target['Name']} is killed!")
+                    monsters.pop(0)
+
+        if combat_log:
+            append_to_combat_log(combat_log, "--- Monster Turn ---")
+        for monster in monsters[:3]:
+            if party:
+                target = party[0]
+                if attack(monster, target):
+                    if combat_log:
+                        append_to_combat_log(combat_log, f"{target['Name']} is killed!")
+                    party.pop(0)
+
+        if not party:
+            if combat_log:
+                append_to_combat_log(combat_log, "The party has been defeated!")
+            return False
+        if not monsters:
+            if combat_log:
+                append_to_combat_log(combat_log, "All monsters have been defeated!")
+            return True
+
+    return True if party else False
+
+
+def append_to_combat_log(combat_log, message):
+    combat_log.config(state="normal")
+    combat_log.insert(tk.END, message + "\n")
+    combat_log.config(state="disabled")
+    combat_log.see(tk.END)
+
+
+def calculate_treasure(monsters, encounter_type="Room"):
+    treasure_summary = {}
+    for monster in monsters:
+        treasure_type = monster.get("Treasure")
+        if treasure_type:
+            if "/" in treasure_type:
+                treasure_type = treasure_type.split("/")[0] if encounter_type == "Room" else treasure_type.split("/")[1]
+
+            if treasure_type in TREASURE_TABLE:
+                treasure = TREASURE_TABLE[treasure_type]
+                for item, value in treasure.items():
+                    if value != "0:0":
+                        rolled_value = roll_dice_expression(value)
+                        treasure_summary[item] = treasure_summary.get(item, 0) + rolled_value
+    return treasure_summary
+
+def reorganize_party(party):
+    print("\nReorganizing Party:")
+    for i, character in enumerate(party):
+        print(f"{i + 1}. {character['Name']} ({character['Race']}) {character['WP']}/{character['Max WP']}")
+    print("Enter new positions by number (comma-separated for rows, e.g., 1,2,3|4,5,6):")
+    try:
+        positions = input("Reorganize: ").split("|")
+        new_order = [party[int(p.strip()) - 1] for row in positions for p in row.split(",")]
+        return new_order
+    except (ValueError, IndexError):
+        print("Invalid input, keeping current order.")
+        return party
+
+def reorganize_monsters(monsters):
+    print("\nReorganizing Monsters:")
+    for i, monster in enumerate(monsters):
+        print(f"{i + 1}. {monster['Name']} {monster['WP']}/{monster.get('Max WP', monster['WP'])}")
+    front_row = monsters[:3]
+    back_row = monsters[3:]
+    if back_row:
+        front_row.append(back_row.pop(0))
+    return front_row + back_row
+
+def encounter_monster(room_visited, room_type):
+    print("\nChecking for monsters...")
+    roll = random.randint(1, 6)
+
+    if room_visited:
+        if roll == 1:
+            print("Wandering Monster detected!")
+            monsters = roll_monster(WANDERING_MONSTER_TABLE)
+            resolve_encounter(monsters, encounter_type="Wandering")
+    else:
+        if room_type == "corridor" and roll == 1:
+            print("Corridor Monster detected!")
+            monsters = roll_monster(ROOM_MONSTER_TABLE)
+            resolve_encounter(monsters, encounter_type="Room")
+        elif room_type == "room" and roll in [1, 2, 3]:
+            print("Room Monster detected!")
+            monsters = roll_monster(ROOM_MONSTER_TABLE)
+            resolve_encounter(monsters, encounter_type="Room")
+
+def resolve_encounter(monsters, encounter_type):
+    print(f"Encountered {len(monsters)} {monsters[0]['Name']} with {monsters[0]['WP']} WP each.")
+
+    action = input("Choose action: Negotiate (n), Bribe (b), Fight (f): ").lower()
+
+    if action == "n":
+        negotiation_result = negotiate(monsters[0])
+        if negotiation_result == "Agreement":
+            print("The monster agrees to let the party pass.")
+            return
+        elif negotiation_result == "Intimidate":
+            print("The monster is intimidated and leaves some treasure!")
+            return
+        else:
+            print("Negotiation failed.")
+
+    if action == "b":
+        bribe_success = attempt_bribe(monsters)
+        if bribe_success:
+            print("The monster accepts the bribe and leaves the party.")
+            return
+        else:
+            print("Bribe failed.")
+
+    print("The party must fight the monster!")
+    if combat_sequence(party, monsters):
+        treasure = calculate_treasure(monsters, encounter_type)
+        if treasure:
+            print("\nTreasure collected:")
+            for item, amount in treasure.items():
+                print(f"{item}: {amount}")
+        else:
+            print("\nNo treasure found.")
+
+def negotiate(monster):
+    roll = sum(roll_dice(6, 2)) - monster["NV"]
+    print(f"Negotiation roll: {roll}")
+
+    if roll >= 10:
+        return "Intimidate"
+    elif roll >= 7:
+        return "Agreement"
+    else:
+        return "Failure"
+
+def attempt_bribe(monsters):
+    offer = int(input("Enter Gold Marks offered: "))
+    monster_strength = monsters[0]["WP"] + monsters[0]["NV"]
+
+    for row in BRIBERY_TABLE:
+        if offer >= row["Gold Marks"] and monster_strength in row["Range"]:
+            roll = roll_dice(6)[0]
+            return roll <= row["Roll"]
+
+    return False
 
 def main():
-    WINDOW_WIDTH = 600
-    WINDOW_HEIGHT = 600
-    BUTTON_HEIGHT = 40
-    CANVAS_MARGIN = 10
-
-    tile_size = 53
-    root = tk.Tk()
-    root.title("Dungeon Visualizer")
-    root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
-    root.resizable(False, False)
-    root.config(bg="#2E2E2E")
-    dice_rolled = False
-
-    player_stats = {
-        "Name": "string",
-        "Race": "string",
-        "Ability": "integer",
-        "Strength": "integer",
-        "Spells": "string",
-        "Magical Potential": "integer",
-        "Magical Items": "string",
-        "Resistance": "integer",
-        "Gold": "integer",
-        "Agility": "integer",
-        "Weapon": "string",
-        "Experience Points": "integer",
-        "Proficiency": "string",
-        "Valuables": "string",
-    }
-
-    
-    enemy_stats = {
-        "Goblin": {"strength": 3, "magic": 1},
-        "Orc": {"strength": 5, "magic": 2},
-        "Dark Wizard": {"strength": 2, "magic": 6},
-        "Skeleton": {"strength": 4, "magic": 1},
-        "Troll": {"strength": 6, "magic": 3},
-        "Vampire": {"strength": 4, "magic": 5},
-    }
-    spawned_enemy = {}
-
-
-    stats_frame = tk.Frame(root, bg="#1E1E1E")
-    stats_frame.pack(fill=tk.BOTH, expand=True)
-
-    stats_entries = {}
-    error_label = tk.Label(stats_frame, text="", bg="#1E1E1E", fg="red")
-    error_label.grid(row=len(player_stats) + 1, column=0, columnspan=2, pady=10)
-
-    def start_game():
-        nonlocal player_stats
-
-        errors = []
-        for stat, (expected_type, entry) in stats_entries.items():
-            value = entry.get()
-            if expected_type == "integer":
-                if not value.isdigit():
-                    errors.append(f"{stat} must be an integer.")
-                    continue
-                player_stats[stat] = int(value)
-            else:
-                player_stats[stat] = value if value else ""
-
-        player_stats["Gold"] = player_stats.get("Gold", 0) or 0
-        player_stats["Experience Points"] = player_stats.get("Experience Points", 0) or 0
-
-        if errors:
-            error_label.config(text="\n".join(errors))
-            return
-
-        error_label.config(text="")
-        stats_frame.pack_forget()
-        game_frame.pack(fill=tk.BOTH, expand=True)
-
-    for idx, (stat, expected_type) in enumerate(player_stats.items()):
-        label = tk.Label(stats_frame, text=f"{stat} ({expected_type}):", bg="#1E1E1E", fg="white")
-        label.grid(row=idx, column=0, sticky="w", padx=10, pady=5)
-
-        entry = tk.Entry(stats_frame, bg="#3A3A3A", fg="white", relief="flat")
-        entry.grid(row=idx, column=1, padx=10, pady=5)
-        stats_entries[stat] = (expected_type, entry)
-
-    start_button = tk.Button(
-        stats_frame,
-        text="Start Game",
-        bg="#3A3A3A",
-        fg="white",
-        relief="flat",
-        command=start_game,
-    )
-    start_button.grid(row=len(player_stats), column=0, columnspan=2, pady=10)
-
-    game_frame = tk.Frame(root, bg="#1E1E1E")
-
-    canvas_width = WINDOW_WIDTH - 2 * CANVAS_MARGIN
-    canvas_height = WINDOW_HEIGHT - BUTTON_HEIGHT - 2 * CANVAS_MARGIN
-
-    canvas = tk.Canvas(game_frame, bg="#1E1E1E", width=canvas_width, height=canvas_height)
-    canvas.pack(side=tk.TOP, pady=CANVAS_MARGIN)
-
-    button_frame = tk.Frame(game_frame, bg="#2E2E2E")
-    button_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=0)
-
-    button_container = tk.Frame(button_frame, bg="#2E2E2E")
-    button_container.pack(side=tk.BOTTOM, pady=5)
-
-    reveal_button = tk.Button(
-        button_container,
-        text="Reveal Next Room",
-        bg="#3A3A3A",
-        fg="white",
-        relief="flat",
-        height=2,
-    )
-    reveal_button.pack(side=tk.LEFT, padx=10)
-
-    tiles = load_tiles()
-    used_positions = create_dungeon(10)
-    if not used_positions:
-        print("Dungeon creation failed.")
-        reveal_button.config(state=tk.DISABLED)
+    if IS_GUI_MODE:
+        print("Launching GUI mode...")
+        dungeon_gui.root.mainloop()
         return
 
-    revealed_rooms = []
-    room_positions = list(used_positions.items())
-    starting_room_position = room_positions[0][0]
-    player_position = starting_room_position
-    target_position = starting_room_position
-    path_to_target = []
-    active_enemy_position = None
+    print("Welcome to the Citadel Adventure Setup!")
 
-    canvas_center_x = canvas_width // 2
-    canvas_center_y = canvas_height // 2
+    heroes = shuffle_and_pick(HEROES, 3)
+    print("\nSelected Heroes:")
+    for hero in heroes:
+        print(f"- {hero['Name']} ({hero['Race']})")
 
-    dungeon_image = None
+    hero_records = [
+        {
+            "Name": hero["Name"],
+            "Race": hero["Race"],
+            "Weapons": hero["Weapons"],
+            "Magical Potential": hero["MP"],
+            "WP": hero["WP"],
+            "Max WP": hero["WP"],
+            "RV": hero["RV"],
+            "CB": hero["CB"],
+            "Skills": hero["Skill"],
+            "Spells": [],
+            "Magic Items": [],
+            "Gold Marks": 0,
+            "Jewels": 0,
+            "Experience Points": 0,
+        }
+        for hero in heroes
+    ]
 
-    def draw_player(position):
-        x, y = position
-        canvas_x = canvas_center_x + (y - starting_room_position[1]) * tile_size
-        canvas_y = canvas_center_y + (x - starting_room_position[0]) * tile_size
+    initiates = setup_initiates()
 
-        radius = 10
-        tile_center_x = canvas_x + tile_size // 2
-        tile_center_y = canvas_y + tile_size // 2
+    global party
+    party = hero_records + initiates
 
-        canvas.create_oval(
-            tile_center_x - radius,
-            tile_center_y - radius,
-            tile_center_x + radius,
-            tile_center_y + radius,
-            fill="green",
-            outline="",
-            tag="player",
-        )
+    print("\nOrganize your party before starting the adventure:")
+    party = reorganize_party(party)
 
-    def spawn_enemy(position):
-        nonlocal active_enemy_position, spawned_enemy
-        room_type = room_types[used_positions[position]]['type']
-
-        if room_type == 'corridor' and random.randint(1, 6) == 1:
-            active_enemy_position = position
-        elif room_type != 'corridor' and random.randint(1, 2) == 1:
-            active_enemy_position = position
-        else:
-            active_enemy_position = None
-
-        if active_enemy_position:
-            if active_enemy_position not in spawned_enemy:
-                enemy_name = random.choice(list(enemy_stats.keys()))
-                spawned_enemy[active_enemy_position] = {
-                    "name": enemy_name,
-                    "stats": enemy_stats[enemy_name]
-                }
-                print(f"Enemy spawned: {enemy_name} at {active_enemy_position}")
-                print(f"Stats: {enemy_stats[enemy_name]}")
-        else:
-            print("No enemy spawned in this room.")
-
-
-
-
-    def roll_dice():
-        nonlocal dice_rolled, active_enemy_position
-        if not active_enemy_position:
-            return
-
-        enemy_dice = random.randint(1, 6)
-        enemy_data = spawned_enemy[active_enemy_position]
-        enemy_strength_total = enemy_data['stats']['strength'] + enemy_dice 
-
-        player_dice = random.randint(1, 6)
-        player_strength_total = player_stats["Strength"] + player_dice
-
-        canvas.delete("dice_result")
-        canvas.create_text(
-            canvas_center_x,
-            canvas_center_y - 50,
-            text=f"Player rolls {player_dice} (Strength +{player_stats['Strength']})",
-            fill="white",
-            font=("Arial", 16),
-            tag="dice_result"
-        )
-        canvas.create_text(
-            canvas_center_x,
-            canvas_center_y - 20,
-            text=f"Enemy rolls {enemy_dice} (Strength +{enemy_data['stats']['strength']})",
-            fill="red",
-            font=("Arial", 16),
-            tag="dice_result"
-        )
-
-        print(f"Player rolls: {player_dice} (Total: {player_strength_total})")
-        print(f"Enemy rolls: {enemy_dice} (Total: {enemy_strength_total})")
-
-        if player_strength_total < enemy_strength_total:
-            print("Player lost to the enemy!")
-            handle_loss()
-        else:
-            print("Player won the encounter!")
-            dice_rolled = False
-
-    def show_rolls_on_canvas(player_roll, enemy_roll):
-        canvas.delete("dice_roll")
-
-        player_roll_x = 100
-        player_roll_y = canvas_height - 50
-
-        enemy_roll_x = canvas_width - 100
-        enemy_roll_y = canvas_height - 50
-
-        canvas.create_text(
-            player_roll_x,
-            player_roll_y,
-            text=f"Player Roll: {player_roll}",
-            fill="green",
-            font=("Arial", 16),
-            tag="dice_roll"
-        )
-
-        canvas.create_text(
-            enemy_roll_x,
-            enemy_roll_y,
-            text=f"Enemy Roll: {enemy_roll}",
-            fill="red",
-            font=("Arial", 16),
-            tag="dice_roll"
-        )
-
-
-
-    def draw_enemy():
-        if active_enemy_position:
-            x, y = active_enemy_position
-            canvas_x = canvas_center_x + (y - starting_room_position[1]) * tile_size
-            canvas_y = canvas_center_y + (x - starting_room_position[0]) * tile_size
-
-            radius = 10
-            enemy_center_x = canvas_x + tile_size // 2
-            enemy_center_y = canvas_y + tile_size // 2
-
-            canvas.create_oval(
-                enemy_center_x - radius,
-                enemy_center_y - radius,
-                enemy_center_x + radius,
-                enemy_center_y + radius,
-                fill="red",
-                outline="",
-                tag="enemy",
-            )
-
-    def check_proximity_to_enemy():
-        if active_enemy_position:
-            px, py = player_position
-            ex, ey = active_enemy_position
-            distance = abs(px - ex) + abs(py - ey)
-            
-            if distance == 1:
-                
-                player_roll = random.randint(1, 6)
-                enemy_roll = random.randint(1, 6)
-
-                show_rolls_on_canvas(player_roll, enemy_roll)
-
-                player_total = player_stats["Strength"] + player_roll
-                enemy_total = spawned_enemy[active_enemy_position]["stats"]["strength"] + enemy_roll
-
-                print(f"Player Roll: {player_roll} (Total: {player_total})")
-                print(f"Enemy Roll: {enemy_roll} (Total: {enemy_total})")
-
-                if player_total < enemy_total:
-                    handle_loss()
-
-    def handle_loss():
-        nonlocal dice_rolled, active_enemy_position
-        reveal_button.config(state=tk.DISABLED)
-        canvas.delete("dice_result")
-        canvas.delete("enemy_info")
-        dice_rolled = False
-        active_enemy_position = None
-
-        print("Player lost to the enemy!")
-        if active_enemy_position and active_enemy_position in spawned_enemy:
-            enemy_data = spawned_enemy[active_enemy_position]
-            print(f"Enemy was a {enemy_data['name']} with stats: {enemy_data['stats']}")
-
-        print("Player Statistics:")
-        for stat, value in player_stats.items():
-            print(f"{stat}: {value}")
-
-    def move_player():
-        nonlocal player_position, active_enemy_position
-        if path_to_target:
-            next_step = path_to_target.pop(0)
-            player_position = next_step
-
-            if player_position == active_enemy_position:
-                pass
-
-            if used_positions.get(player_position) == "end":
-                print("Player has reached the 'end' tile.")
-                print("Player Statistics:")
-                for stat, value in player_stats.items():
-                    print(f"{stat}: {value}")
-                canvas.create_text(
-                    canvas_center_x,
-                    canvas_center_y,
-                    text="You escaped!",
-                    fill="white",
-                    font=("Arial", 24),
-                )
-                reveal_button.config(state=tk.DISABLED)
-
-            canvas.delete("all")
-            draw_dungeon()
-            draw_player(player_position)
-            draw_enemy()
-            canvas.update()
-
-            check_proximity_to_enemy()
-            return True
-        return False
-
-
-    def draw_dungeon():
-        nonlocal dungeon_image
-        dungeon_image = draw_dungeon_visualization(
-            dict(revealed_rooms), tiles, canvas_width, canvas_height, starting_room_position
-        )
-
-        dungeon_image_tk = ImageTk.PhotoImage(dungeon_image)
-        canvas.create_image(
-            canvas_center_x, canvas_center_y, anchor="center", image=dungeon_image_tk
-        )
-        canvas.image = dungeon_image_tk
-
-        draw_enemy()
-
-    def reveal_next_room():
-        nonlocal dungeon_image, path_to_target, target_position
-
-        if player_position != target_position:
-            if not move_player():
-                print("Error: Player failed to move.")
-            return
-
-        if room_positions:
-            previous_position = player_position
-            position, room = room_positions.pop(0)
-            revealed_rooms.append((position, room))
-
-            if room == "end":
-                print("Final room placed: the 'end' tile has been set.")
-            else:
-                spawn_enemy(position)
-
-            target_position = position
-            path_to_target = bfs_shortest_path(previous_position, target_position, dict(revealed_rooms))
-
-            draw_dungeon()
-            draw_player(player_position)
-
-            check_proximity_to_enemy()
-        else:
-            print("All rooms revealed.")
-            reveal_button.config(state=tk.DISABLED)
-
-    reveal_button.config(command=reveal_next_room)
-
-    draw_dungeon()
-    draw_player(player_position)
-
-    root.mainloop()
 
 if __name__ == "__main__":
     main()
+

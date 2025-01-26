@@ -1,5 +1,5 @@
 from PIL import Image, ImageDraw
-from dungeon_creator import room_counts
+from dungeon_creator import room_counts, room_types
 import os
 
 tile_folder = "tiles"
@@ -27,7 +27,11 @@ def draw_dungeon_visualization(used_positions, tiles, window_width, window_heigh
 
     canvas = Image.new("RGBA", (window_width, window_height), (255, 255, 255, 0))
 
-    for (x, y), room in used_positions.items():
+    for (x, y), data in used_positions.items():
+        if isinstance(data, str):
+            data = {"room": data, "type": room_types.get(data, {}).get("type", "unknown")}
+
+        room = data["room"]
         if not room:
             print(f"Skipping invalid room at position {(x, y)}")
             continue
