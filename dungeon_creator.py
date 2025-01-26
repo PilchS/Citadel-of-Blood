@@ -62,6 +62,7 @@ connections = {
 
 room_types = {
     "start": {"type": "start"},
+    "end": {"type": "end"},
     "a1": {"type": "corridor"},
     "a2": {"type": "corridor"},
     "a3": {"type": "corridor"},
@@ -107,7 +108,7 @@ room_types = {
 }
 
 room_counts = {
-    "start": 0, "a": 11, "b": 4, "c": 12, "d": 16, "e": 14, "f": 7, "g": 6, "h": 18, "i": 11, "j": 14, "k": 5, "m": 10, "p": 4, "s": 10, "t": 5, "w": 5, "x": 4, "z": 5
+    "start": 0, "end":0, "a": 11, "b": 4, "c": 12, "d": 16, "e": 14, "f": 7, "g": 6, "h": 18, "i": 11, "j": 14, "k": 5, "m": 10, "p": 4, "s": 10, "t": 5, "w": 5, "x": 4, "z": 5
     #"start": 0, "a": 0, "b": 0, "c": 0, "d": 0, "e": 0, "f": 0, "g": 0, "h": 0, "i": 0, "j": 50, "k": 0, "m": 0, "p": 0, "s": 0, "t": 0, "w": 0, "x": 0, "z": 0
 }
 
@@ -237,13 +238,14 @@ def create_dungeon(max_rooms):
         return None
 
     room_counts["start"] = 0
+    room_counts["end"] = 1  # Ensure only one "end" room is allowed
     end_room_placed = False
 
     path = []
     room_count = 1
 
     while room_count < max_rooms:
-        possible_rooms = [r for r, count in room_counts.items() if count > 0]
+        possible_rooms = [r for r, count in room_counts.items() if count > 0 and r not in ["start", "end"]]
         if not possible_rooms:
             print("No available rooms left to draw.")
             break
@@ -265,7 +267,7 @@ def create_dungeon(max_rooms):
                 rotations = [r for r in connections if r.startswith(base_room)]
 
                 for rotated_room in rotations:
-                    if rotated_room == "start":
+                    if rotated_room == "start" or rotated_room == "end":
                         continue
 
                     if compatible_connection(current_room, rotated_room, direction):
@@ -297,27 +299,31 @@ def create_dungeon(max_rooms):
             current_room = last_room
 
     if not end_room_placed:
-        for (x, y), room_data in list(used_positions.items())[::-1]:
-            for direction in ["top", "right", "bottom", "left"]:
-                nx, ny = get_adjacent_position(x, y, direction)
-                if (0 <= nx < len(map_grid)) and (0 <= ny < len(map_grid[0])) and (nx, ny) not in used_positions:
-                    if check_all_connections((nx, ny), "end"):
-                        map_grid[nx][ny] = "end"
-                        used_positions[(nx, ny)] = {
-                            "room": "end",
-                            "type": "end",
-                        }
-                        end_room_placed = True
-                        print(f"End room placed at {(nx, ny)} in direction {direction}.")
-                        break
-            if end_room_placed:
-                break
-
-    if not end_room_placed:
-        print("Failed to place an end room.")
+        draw_end_room()
 
     end_time = time.time()
     elapsed_time = end_time - start_time
     print(f"Room placing completed in {elapsed_time:.6f} seconds.")
 
     return used_positions
+
+def draw_end_room():
+    global end_room_placed
+
+    # Try to place the "end" room in an available spot after all other rooms
+    for (x, y), room_data in list(used_positions.items())[::-1]:
+        for direction in ["top", "right", "bottom", "left"]:
+            nx, ny = get_adjacent_position(x, y, direction)
+            if (0 <= nx < len(map_grid)) and (0 <= ny < len(map_grid[0])) and (nx, ny) not in used_positions:
+                if check_all_connections((nx, ny), "end"):
+                    map_grid[nx][ny] = "end"
+                    used_positions[(nx, ny)] = {
+                        "room": "end",
+                        "type": "end",
+                    }
+                    end_room_placed = True
+                    print(f"End room placed at {(nx, ny)} in direction {direction}.")
+                    return True
+
+    print("Failed to place an end room.")
+    return False
