@@ -613,7 +613,7 @@ def load_and_place_monsters(canvas, monster_name, monster_count):
 
 def handle_negotiation(monster, canvas, button_frame, negotiate_button):
     roll = sum(roll_dice(6, 2)) - monster["NV"]
-    if roll < 7:
+    if roll > 10:
         result = "Intimidate"
         message = f"The monster is intimidated and leaves some treasure! Roll: {roll}"
         determine_treasure(monster)
@@ -665,7 +665,9 @@ def handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat
             return
 
         roll = roll_dice(6)[0]
-        print(f"Bribe Roll: {roll}, Required Roll: {matching_row['Roll']}")
+
+        bribe_roll = f"Bribe Roll: {roll}, Required Roll: {matching_row['Roll']}"
+        append_to_combat_log(combat_log, bribe_roll)
 
         if roll <= matching_row["Roll"]:
             party_gold -= offer
@@ -674,9 +676,6 @@ def handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat
             append_to_combat_log(combat_log, message)
             print(message)
         else:
-            message = f"The monster rejects your bribe of {offer} Gold Marks! The monsters attack first!"
-            append_to_combat_log(combat_log, message)
-            print(message)
             bribe_button.config(state=tk.DISABLED)
 
     except ValueError:
