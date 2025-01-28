@@ -47,24 +47,17 @@ def roll_monster(table):
     first_roll = min(max(first_roll, 1), len(table))
     second_roll = min(max(second_roll, 1), len(table[first_roll - 1]))
 
-    # Get monster information
     monster_info = table[first_roll - 1][second_roll - 1]
     name, count = parse_monster_count(monster_info)
-    
-    # Create the monster dictionary
+
     monster = {"Name": name, "Count": count, "WP": MONSTER_CHARACTERISTICS[name]["WP"] * count}
     monster.update(MONSTER_CHARACTERISTICS[name])
 
-    # Assign default Treasure attribute if it doesn't exist
-    monster["Treasure"] = MONSTER_CHARACTERISTICS[name].get("Treasure", "T1")  # Default to "T1"
+    monster["Treasure"] = MONSTER_CHARACTERISTICS[name].get("Treasure", "T1")
 
-    # Debug the generated monster
     print(f"DEBUG: Generated monster: {monster['Name']}, Count: {monster['Count']}, WP: {monster['WP']}, Treasure: {monster['Treasure']}")
 
     return monster
-
-
-
 
 def parse_monster_count(monster_info):
     name, count = monster_info.split(": ")

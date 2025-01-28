@@ -238,7 +238,7 @@ def create_dungeon(max_rooms):
         return None
 
     room_counts["start"] = 0
-    room_counts["end"] = 1  # Ensure only one "end" room is allowed
+    room_counts["end"] = 1
     end_room_placed = False
 
     path = []
@@ -310,7 +310,6 @@ def create_dungeon(max_rooms):
 def draw_end_room():
     global end_room_placed
 
-    # Try to place the "end" room in an available spot after all other rooms
     for (x, y), room_data in list(used_positions.items())[::-1]:
         for direction in ["top", "right", "bottom", "left"]:
             nx, ny = get_adjacent_position(x, y, direction)
