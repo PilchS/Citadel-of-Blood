@@ -418,6 +418,7 @@ def start_dungeon():
             dict(revealed_rooms), tiles, canvas_width, canvas_height, starting_room_position
         )
         dungeon_image_tk = ImageTk.PhotoImage(dungeon_image)
+
         dungeon_canvas.create_image(
             canvas_center_x, canvas_center_y, anchor="center", image=dungeon_image_tk
         )
@@ -429,8 +430,8 @@ def start_dungeon():
         for position, monster in monsters_in_rooms.items():
             tag = f"monster_{position}"
             x, y = position
-            canvas_x = canvas_center_x + (y - starting_room_position[1]) * 50 + 20
-            canvas_y = canvas_center_y + (x - starting_room_position[0]) * 50 + 20
+            canvas_x = canvas_center_x + (y - starting_room_position[1]) * 50
+            canvas_y = canvas_center_y + (x - starting_room_position[0]) * 50
 
             dungeon_canvas.create_oval(
                 canvas_x - 5, canvas_y - 5, canvas_x + 5, canvas_y + 5,
@@ -438,27 +439,21 @@ def start_dungeon():
             )
             print(f"Monster drawn at {position} with tag: {tag}")
 
+
     def draw_player(position):
         x, y = position
         canvas_x = canvas_center_x + (y - starting_room_position[1]) * 50
         canvas_y = canvas_center_y + (x - starting_room_position[0]) * 50
 
         radius = 10
-        tile_center_x = canvas_x + 25
-        tile_center_y = canvas_y + 25
-
         dungeon_canvas.create_oval(
-            tile_center_x - radius,
-            tile_center_y - radius,
-            tile_center_x + radius,
-            tile_center_y + radius,
-            fill="green",
-            outline="",
-            tag="player",
+            canvas_x - radius, canvas_y - radius,
+            canvas_x + radius, canvas_y + radius,
+            fill="green", outline="", tag="player"
         )
 
+
     def spawn_end_room_monsters(position):
-        """Spawn the strongest monsters in the end room."""
         if dungeon_data[position]["type"] == "end":
             monsters_in_rooms[position] = [
             {"Name": "Evil Hero", "WP": MONSTER_CHARACTERISTICS["Evil Hero"]["WP"], "Max WP": MONSTER_CHARACTERISTICS["Evil Hero"]["WP"]},
@@ -837,7 +832,6 @@ MONSTER_ATTACK_OPTIONS = {
 }
 
 def check_game_end_conditions():
-    """Check if the game has been won or lost."""
     global party
 
     if not any(member["WP"] > 0 for member in party):

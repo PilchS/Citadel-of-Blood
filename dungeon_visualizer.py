@@ -21,8 +21,8 @@ def rotate_tile(tile, rotation_suffix):
 
 def draw_dungeon_visualization(used_positions, tiles, window_width, window_height, starting_position):
     tile_size = 53
-    offset_x = window_width // 2
-    offset_y = window_height // 2
+    offset_x = window_width // 2 - tile_size // 2
+    offset_y = window_height // 2 - tile_size // 2
     start_x, start_y = starting_position
 
     canvas = Image.new("RGBA", (window_width, window_height), (255, 255, 255, 0))
@@ -56,3 +56,4 @@ def draw_dungeon_visualization(used_positions, tiles, window_width, window_heigh
         canvas.paste(rotated_tile, (pos_x, pos_y), rotated_tile)
 
     return canvas
+
