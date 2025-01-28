@@ -109,11 +109,14 @@ def combat_sequence(party, monsters, combat_log=None):
 
 
 def append_to_combat_log(combat_log, message):
+    if combat_log is None:
+        print(message)
+        return
+
     combat_log.config(state="normal")
-    combat_log.insert(tk.END, message + "\n")
+    combat_log.insert(tk.END, f"{message}\n")
     combat_log.config(state="disabled")
     combat_log.see(tk.END)
-
 
 def calculate_treasure(monsters, encounter_type="Room"):
     treasure_summary = {}

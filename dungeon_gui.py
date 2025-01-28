@@ -87,12 +87,96 @@ MONSTER_GOLD_REWARDS = {
         "visited": {"threshold": 1, "max_roll": 3, "multiplier": 1},
         "nonvisited": {"threshold": 1, "max_roll": 3, "multiplier": 1},
     },
-    "Wight": {
+    "Wraiths": {
         "visited": {"threshold": 6, "max_roll": 6, "multiplier": 5},
         "nonvisited": {"threshold": 1, "max_roll": 18, "multiplier": 1},
     }
 }
 
+MONSTER_JEWELS_TABLE = {
+    "Chimaera": {
+        "visited": {"threshold": 2, "max_roll": 6},
+        "nonvisited": {"threshold": 2, "max_roll": 6},
+    },
+    "Cronks": {
+        "visited": {"threshold": 2, "max_roll": 6},
+        "nonvisited": {"threshold": -1, "max_roll": 0},
+    },
+    "Dire Wolves": {
+        "visited": {"threshold": -1, "max_roll": 0},
+        "nonvisited": {"threshold": -1, "max_roll": 0},
+    },
+    "Evil Hero": {
+        "visited": {"threshold": 2, "max_roll": 6},
+        "nonvisited": {"threshold": -1, "max_roll": 0},
+    },
+    "Evil Mage": {
+        "visited": {"threshold": 2, "max_roll": 6},
+        "nonvisited": {"threshold": -1, "max_roll": 0},
+    },
+    "Gargoyle": {
+        "visited": {"threshold": 3, "max_roll": 6},
+        "nonvisited": {"threshold": 3, "max_roll": 6},
+    },
+    "Harpies": {
+        "visited": {"threshold": -1, "max_roll": 0},
+        "nonvisited": {"threshold": -1, "max_roll": 0},
+    },
+    "Medusa": {
+        "visited": {"threshold": 3, "max_roll": 6},
+        "nonvisited": {"threshold": 3, "max_roll": 6},
+    },
+    "Minotaur": {
+        "visited": {"threshold": 2, "max_roll": 6},
+        "nonvisited": {"threshold": -1, "max_roll": 0},
+    },
+    "Ogre": {
+        "visited": {"threshold": 2, "max_roll": 6},
+        "nonvisited": {"threshold": 2, "max_roll": 6},
+    },
+    "Orcs": {
+        "visited": {"threshold": 1, "max_roll": 3},
+        "nonvisited": {"threshold": -1, "max_roll": 0},
+    },
+    "Skeletons": {
+        "visited": {"threshold": 3, "max_roll": 6},
+        "nonvisited": {"threshold": -1, "max_roll": 0},
+    },
+    "Troll": {
+        "visited": {"threshold": 2, "max_roll": 6},
+        "nonvisited": {"threshold": 2, "max_roll": 6},
+    },
+    "Vampire": {
+        "visited": {"threshold": 2, "max_roll": 6},
+        "nonvisited": {"threshold": 2, "max_roll": 6},
+    },
+    "Wargs": {
+        "visited": {"threshold": -1, "max_roll": 0},
+        "nonvisited": {"threshold": -1, "max_roll": 0},
+    },
+    "Wight": {
+        "visited": {"threshold": 1, "max_roll": 3},
+        "nonvisited": {"threshold": 1, "max_roll": 3},
+    },
+    "Wraiths": {
+        "visited": {"threshold": 2, "max_roll": 6},
+        "nonvisited": {"threshold": 1, "max_roll": 3},
+    },
+}
+
+JEWELS_TABLE = {
+    "2": "1",
+    "3": "5",
+    "4": "10",
+    "5": "15",
+    "6": "20",
+    "7": "25",
+    "8": "35",
+    "9": "50",
+    "10": "75",
+    "11": "100",
+    "12": "150",
+}
 class EnhancedPlayer(Player):
     def get_neighbors(self):
         return self.connected_tiles.get(self.position, [])
@@ -297,7 +381,7 @@ def check_and_spawn_monster(player_position):
                 print(f"A {monster['Name']} spawned at {adjacent_tile}, type: {tile_type}.")
 
 def start_dungeon():
-    global dungeon_data, tiles, revealed_tiles, monsters_in_rooms, movement_buttons
+    global dungeon_data, tiles, revealed_tiles, monsters_in_rooms, movement_buttons, starting_room_position
 
     tiles = load_tiles()
     dungeon_data = create_dungeon(10)
@@ -305,6 +389,10 @@ def start_dungeon():
     if not dungeon_data:
         print("Dungeon creation failed.")
         return
+
+    for position, data in dungeon_data.items():
+        print(f"Room at {position}: Type = {data['type']}")
+
 
     revealed_rooms = []
     room_positions = list(dungeon_data.items())
@@ -369,6 +457,16 @@ def start_dungeon():
             tag="player",
         )
 
+    def spawn_end_room_monsters(position):
+        """Spawn the strongest monsters in the end room."""
+        if dungeon_data[position]["type"] == "end":
+            monsters_in_rooms[position] = [
+            {"Name": "Evil Hero", "WP": MONSTER_CHARACTERISTICS["Evil Hero"]["WP"], "Max WP": MONSTER_CHARACTERISTICS["Evil Hero"]["WP"]},
+            {"Name": "Troll", "WP": MONSTER_CHARACTERISTICS["Troll"]["WP"], "Max WP": MONSTER_CHARACTERISTICS["Troll"]["WP"]},
+            {"Name": "Evil Mage", "WP": MONSTER_CHARACTERISTICS["Evil Mage"]["WP"], "Max WP": MONSTER_CHARACTERISTICS["Evil Mage"]["WP"]},
+            ]
+            print(f"Spawned predetermined monsters in the end room at {position}: Evil Hero, Troll, Evil Mage")
+
     update_leave_button = add_leave_button(dungeon_canvas, starting_room_position)
 
     def is_adjacent(current, target):
@@ -403,6 +501,9 @@ def start_dungeon():
                 player_position = next_position
                 print(f"Player moved to {player_position}.")
 
+                if dungeon_data[player_position]["type"] == "end":
+                    spawn_end_room_monsters(player_position)
+
                 if player_position == revealed_rooms[-1][0] and room_positions:
                     while room_positions:
                         new_room = room_positions.pop(0)
@@ -410,6 +511,7 @@ def start_dungeon():
                             revealed_rooms.append(new_room)
                             revealed_tiles.add(new_room[0])
                             print(f"Revealed new room at {new_room[0]}.")
+                            spawn_end_room_monsters(new_room[0])
                             break
 
                 if player_position in monsters_in_rooms:
@@ -500,14 +602,14 @@ def load_and_place_images():
         except FileNotFoundError:
             print(f"Image not found: {image_path}")
 
-def add_encounter_buttons(parent_frame, canvas, monster, party, monsters, combat_log):
+def add_encounter_buttons(parent_frame, canvas, monster, party, monsters, combat_log, enable_close_button, encounter_window, is_end_room):
     button_frame = tk.Frame(parent_frame, bg="#333")
     button_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=20, pady=20)
 
     fight_button = tk.Button(
         button_frame,
         text="Fight",
-        command=lambda: handle_fight(canvas, party, monsters, combat_log),
+        command=lambda: handle_fight(canvas, party, monsters, combat_log, fight_button, negotiate_button, bribe_button, enable_close_button),
         bg="#555",
         fg="white",
         width=15,
@@ -518,11 +620,12 @@ def add_encounter_buttons(parent_frame, canvas, monster, party, monsters, combat
     negotiate_button = tk.Button(
         button_frame,
         text="Negotiate",
-        command=lambda: handle_negotiation(monster, canvas, button_frame, negotiate_button),
+        command=lambda: handle_negotiation(monster, canvas, button_frame, negotiate_button, combat_log, enable_close_button),
         bg="#555",
         fg="white",
         width=15,
-        height=2
+        height=2,
+        state=tk.DISABLED if is_end_room else tk.NORMAL
     )
     negotiate_button.pack(pady=10)
 
@@ -536,19 +639,53 @@ def add_encounter_buttons(parent_frame, canvas, monster, party, monsters, combat
     bribe_button = tk.Button(
         button_frame,
         text="Bribe",
-        command=lambda: handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat_log),
+        command=lambda: handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat_log, enable_close_button),
+        bg="#555",
+        fg="white",
+        width=15,
+        height=2,
+        state=tk.DISABLED if is_end_room else tk.NORMAL
+    )
+    bribe_button.pack(pady=10)
+
+    close_button = tk.Button(
+        button_frame,
+        text="Close",
+        state=tk.DISABLED,
+        command=lambda: on_close(encounter_window),
         bg="#555",
         fg="white",
         width=15,
         height=2
     )
-    bribe_button.pack(pady=10)
+    close_button.pack(pady=20)
+
+    return close_button
 
 def add_leave_button(dungeon_canvas, starting_tile):
     def leave_dungeon():
+        global party, movement_buttons
+
+        if player.position == starting_tile and "end_cleared" in dungeon_data and dungeon_data["end_cleared"]:
+            messagebox.showinfo(
+                "Victory!",
+                "You have visited the end room and returned to the start. You won the game!"
+            )
+
+            for button in movement_buttons.values():
+                button.config(state=tk.DISABLED)
+
+            leave_button.config(state=tk.DISABLED)
+
+            return
+
         for member in party:
-            member["WP"] = member["Max WP"]
-        messagebox.showinfo("Party Healed", "The party has been healed and is ready for the next adventure!")
+            if member["WP"] > 0:
+                member["WP"] = member["Max WP"]
+        messagebox.showinfo(
+            "Party Status",
+            "The party members have been healed and are ready for the next adventure!"
+        )
 
     leave_button = tk.Button(
         dungeon_canvas,
@@ -571,7 +708,6 @@ def add_leave_button(dungeon_canvas, starting_tile):
             dungeon_canvas.itemconfigure(leave_button_window, state="hidden")
 
     return update_leave_button_visibility
-
 
 def load_and_place_monsters(canvas, monster_name, monster_count):
     canvas.delete("monsters")
@@ -611,33 +747,35 @@ def load_and_place_monsters(canvas, monster_name, monster_count):
 
     canvas.monster_image_refs = image_refs
 
-def handle_negotiation(monster, canvas, button_frame, negotiate_button):
+def handle_negotiation(monster, canvas, button_frame, negotiate_button, combat_log, enable_close_button):
+    if "NV" not in monster:
+        message = "Negotiation is not possible with these monsters!"
+        append_to_combat_log(combat_log, message)
+        print(message)
+        negotiate_button.config(state=tk.DISABLED)
+        return
+
     roll = sum(roll_dice(6, 2)) - monster["NV"]
     if roll > 10:
         result = "Intimidate"
         message = f"The monster is intimidated and leaves some treasure! Roll: {roll}"
         determine_treasure(monster)
         update_gold_label()
+        enable_close_button()
     elif roll >= 7:
         result = "Agreement"
         message = f"The monster agrees to let the party pass! Roll: {roll}"
+        enable_close_button()
     else:
         result = "Failure"
         message = f"Negotiation failed. Roll: {roll}"
 
-    for widget in button_frame.winfo_children():
-        if isinstance(widget, tk.Label) and widget.cget("text").startswith("Negotiation:"):
-            widget.config(text=f"Negotiation: {message}")
-            break
-    else:
-        tk.Label(button_frame, text=f"Negotiation: {message}", bg="#333", fg="white", wraplength=200).pack(pady=10)
-
+    append_to_combat_log(combat_log, f"Negotiation: {message}")
     negotiate_button.config(state=tk.DISABLED)
-
     print(message)
     return result
 
-def handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat_log):
+def handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat_log, enable_close_button):
     global party_gold
 
     try:
@@ -653,7 +791,7 @@ def handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat
 
         matching_row = None
         for row in BRIBERY_TABLE:
-            if offer == row["Gold Marks"] and monster_strength in row["Range"]:
+            if offer in row["Gold Marks"] and monster_strength in row["Range"]:
                 matching_row = row
                 break
 
@@ -665,7 +803,6 @@ def handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat
             return
 
         roll = roll_dice(6)[0]
-
         bribe_roll = f"Bribe Roll: {roll}, Required Roll: {matching_row['Roll']}"
         append_to_combat_log(combat_log, bribe_roll)
 
@@ -675,17 +812,15 @@ def handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat
             message = f"The monster accepts your bribe of {offer} Gold Marks and leaves peacefully!"
             append_to_combat_log(combat_log, message)
             print(message)
+            enable_close_button()
         else:
+            message = f"The monster rejects your bribe of {offer} Gold Marks!"
+            append_to_combat_log(combat_log, message)
+            print(message)
             bribe_button.config(state=tk.DISABLED)
 
     except ValueError:
         message = "Invalid input. Please enter a valid number."
-        append_to_combat_log(combat_log, message)
-        print(message)
-
-    except ValueError:
-        message = "Invalid input. Please enter a valid number."
-        tk.Label(button_frame, text=f"Bribe: {message}", bg="#333", fg="white", wraplength=200).pack(pady=10)
         append_to_combat_log(combat_log, message)
         print(message)
 
@@ -701,30 +836,47 @@ MONSTER_ATTACK_OPTIONS = {
     "c": [3],
 }
 
-def handle_fight(canvas, party, monsters, combat_log):
+def check_game_end_conditions():
+    """Check if the game has been won or lost."""
+    global party
+
+    if not any(member["WP"] > 0 for member in party):
+        messagebox.showinfo("Game Over", "All your party members have died. You lost the game!")
+        root.destroy()
+        return
+
+    if player.position == starting_room_position and "end_cleared" in dungeon_data and dungeon_data["end_cleared"]:
+        messagebox.showinfo("Victory!", "You have defeated the monsters in the end room and returned to safety. You won the game!")
+        root.destroy()
+
+def handle_fight(canvas, party, monsters, combat_log, fight_button, negotiate_button, bribe_button, enable_close_button):
     global movement_buttons
 
     for button in movement_buttons.values():
         button.config(state=tk.DISABLED)
+
+    negotiate_button.config(state=tk.DISABLED)
+    bribe_button.config(state=tk.DISABLED)
 
     canvas.delete("wp_display")
 
     append_to_combat_log(combat_log, "The fight begins!")
     update_combat_display(canvas, party, monsters)
 
-    current_turn = [0] 
+    current_turn = [0]
 
     def process_turn():
         nonlocal monsters
 
         if not any(hero["WP"] > 0 for hero in party):
             append_to_combat_log(combat_log, "The party has been defeated!")
+            disable_fight_button(fight_button)
             disable_all_buttons()
+            check_game_end_conditions()
             return
 
         if not any(monster["WP"] > 0 for monster in monsters):
             append_to_combat_log(combat_log, "The monsters have been defeated!")
-
             total_gold = sum(calculate_monster_treasure(monster) for monster in monsters)
             if total_gold > 0:
                 global party_gold
@@ -734,8 +886,14 @@ def handle_fight(canvas, party, monsters, combat_log):
             else:
                 append_to_combat_log(combat_log, "No treasure collected.")
 
-            for button in movement_buttons.values():
-                button.config(state=tk.NORMAL)
+            if player.position in dungeon_data and dungeon_data[player.position]["type"] == "end":
+                dungeon_data["end_cleared"] = True
+                append_to_combat_log(combat_log, "You have cleared the monsters in the end room!")
+            
+            disable_fight_button(fight_button)
+            disable_all_buttons()
+            enable_close_button()
+            check_game_end_conditions()
             return
 
         if current_turn[0] % 2 == 0:
@@ -769,6 +927,9 @@ def handle_fight(canvas, party, monsters, combat_log):
             canvas.after(1000, process_turn)
 
     process_turn()
+
+def disable_fight_button(fight_button):
+    fight_button.config(state=tk.DISABLED)
 
 def process_combat_turn(canvas, combat_log, party, monsters, party_positions, monster_positions, current_turn):
     if not any(member["WP"] > 0 for member in party):
@@ -945,7 +1106,6 @@ def next_turn(canvas, next_turn_button, party, monsters, combat_log):
             button.config(state=tk.NORMAL)
 
 def update_combat_display(canvas, party, monsters):
-
     for idx, hero in enumerate(party[:6]):
         tag = f"wp_display_hero_{idx}"
         if hero["WP"] > 0:
@@ -1000,16 +1160,28 @@ def open_encounter_window(monster_table, player_position):
     encounter_window.configure(bg="#333")
     encounter_window.resizable(False, False)
 
+    def prevent_close():
+        messagebox.showinfo("Warning!", "Exit by clicking Close button")
+    encounter_window.protocol("WM_DELETE_WINDOW", prevent_close)
+
     main_frame = tk.Frame(encounter_window, bg="#333")
     main_frame.pack(fill=tk.BOTH, expand=True)
 
     encounter_canvas = tk.Canvas(main_frame, width=900, height=800, bg="#333", highlightthickness=0)
     encounter_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-    monster = roll_monster(monster_table)
-    monster_name = monster["Name"]
-    monster_count = monster["Count"]
-    monsters = [{"Name": monster_name, "WP": monster["WP"], "Max WP": monster["WP"]} for _ in range(monster_count)]
+    is_end_room = dungeon_data[player_position]["type"] == "end"
+
+    if is_end_room:
+        monsters = [
+            {"Name": "Evil Hero", "WP": 8, "Max WP": 8, "NV": 10},
+            {"Name": "Troll", "WP": 10, "Max WP": 10, "NV": 12},
+            {"Name": "Evil Mage", "WP": 6, "Max WP": 6, "NV": 8},
+        ]
+        append_to_combat_log(None, f"Predetermined monsters: {', '.join(m['Name'] for m in monsters)}")
+    else:
+        monster = roll_monster(monster_table)
+        monsters = [{"Name": monster["Name"], "WP": monster["WP"], "Max WP": monster["WP"], "NV": monster.get("NV", 0)} for _ in range(monster["Count"])]
 
     combat_log = tk.Text(
         main_frame,
@@ -1022,82 +1194,125 @@ def open_encounter_window(monster_table, player_position):
     )
     combat_log.pack(side=tk.BOTTOM, padx=10, pady=10)
 
-    append_to_combat_log(combat_log, f"You encountered {monster_count} {monster_name}!")
+    if is_end_room:
+        append_to_combat_log(combat_log, "You encountered the strongest monsters in the end room!")
+    else:
+        append_to_combat_log(combat_log, f"You encountered {len(monsters)} {monsters[0]['Name']}!")
 
-    add_encounter_buttons(main_frame, encounter_canvas, monster, party, monsters, combat_log)
+    close_button = add_encounter_buttons(
+        main_frame,
+        encounter_canvas,
+        monsters[0],
+        party,
+        monsters,
+        combat_log,
+        lambda: close_button.config(state=tk.NORMAL),
+        encounter_window,
+        is_end_room=is_end_room
+    )
 
     load_and_place_party(encounter_canvas)
-    load_and_place_monsters(encounter_canvas, monster_name, monster_count)
+    for monster in monsters:
+        load_and_place_monsters(encounter_canvas, monster["Name"], len(monsters))
 
     def on_close():
         for button in movement_buttons.values():
             button.config(state=tk.NORMAL)
         encounter_window.destroy()
 
-    encounter_window.protocol("WM_DELETE_WINDOW", on_close)
+    encounter_window.protocol("WM_DELETE_WINDOW", prevent_close)
+
+def on_close(encounter_window):
+    for button in movement_buttons.values():
+        button.config(state=tk.NORMAL)
+    encounter_window.destroy()
 
 def determine_treasure(monster):
     global party_gold
 
+    if monster["Name"] in ["Evil Hero", "Evil Hero", "Evil Hero"]:
+        print(f"{monster['Name']} does not drop any treasure.")
+        display_treasure_results(0, 0)
+        return
+
     if "Treasure" not in monster:
         print(f"Monster {monster['Name']} has no treasure.")
-        display_treasure_results(0)
+        display_treasure_results(0, 0)
         return
 
-    treasure_code = monster["Treasure"]
-    if "/" in treasure_code:
-        treasure_code = treasure_code.split("/")[0]
+    monster_name = monster["Name"]
+    print(f"Determining treasure for {monster_name}...")
 
-    print(f"Determining treasure for treasure type: {treasure_code}")
-
-    treasure_data = TREASURE_TABLE.get(treasure_code, {})
-    if not treasure_data:
-        print("No treasure found for this monster.")
-        display_treasure_results(0)
-        return
+    treasure_data_gold = MONSTER_GOLD_REWARDS.get(monster_name, {}).get("visited", {})
+    treasure_data_jewels = MONSTER_JEWELS_TABLE.get(monster_name, {}).get("visited", {})
 
     total_gold = 0
-    for treasure_type, value in treasure_data.items():
-        if treasure_type != "Gold Marks":
-            continue
-        threshold, roll_code = value.split(":")
-        threshold = int(threshold)
+    total_jewel_value = 0
 
-        if "x" in roll_code:
-            dice_part, multiplier = roll_code.split("x")
-            die_count = int(dice_part.split("D")[0])
-            multiplier = int(multiplier)
-        else:
-            die_count = int(roll_code.split("D")[0])
-            multiplier = 1
+    if treasure_data_gold:
+        threshold = treasure_data_gold["threshold"]
+        max_roll = treasure_data_gold["max_roll"]
+        multiplier = treasure_data_gold["multiplier"]
 
-        roll = roll_dice(1)[0]
-        if roll <= threshold:
-            treasure_amount = sum(roll_dice(6, die_count)) * multiplier
-            total_gold += treasure_amount
-            print(f"Found {treasure_amount} Gold Marks!")
+        if threshold != -1 and max_roll > 0 and multiplier > 0:
+            roll = random.randint(1, max_roll)
+            if roll <= threshold:
+                gold_amount = roll * multiplier
+                total_gold += gold_amount
+                print(f"Gold found from {monster_name}: {gold_amount} Gold Marks (Roll: {roll}, Multiplier: {multiplier}).")
+            else:
+                print(f"No gold found from {monster_name} (Roll: {roll} exceeded threshold {threshold}).")
 
-    if total_gold > 0:
-        party_gold += total_gold
+    if treasure_data_jewels:
+        threshold = treasure_data_jewels["threshold"]
+        max_roll = treasure_data_jewels["max_roll"]
+
+        if threshold != -1 and max_roll > 0:
+            roll = random.randint(1, max_roll)
+            if roll <= threshold:
+                jewel_count = roll
+                print(f"Jewels found from {monster_name}: {jewel_count} jewels (Roll: {roll}).")
+
+                for i in range(jewel_count):
+                    jewel_roll = sum(roll_dice(6, 2))
+                    jewel_value = int(JEWELS_TABLE.get(str(jewel_roll), "0"))
+                    total_jewel_value += jewel_value
+                    print(f"Jewel {i + 1}: Rolled {jewel_roll}, worth {jewel_value} Gold Marks.")
+            else:
+                print(f"No jewels found from {monster_name} (Roll: {roll} exceeded threshold {threshold}).")
+
+    total_treasure_value = total_gold + total_jewel_value
+    if total_treasure_value > 0:
+        party_gold += total_treasure_value
         update_gold_label()
-        display_treasure_results(total_gold)
+        display_treasure_results(total_gold, total_jewel_value)
     else:
-        print("You found 0 Gold Marks!")
-        display_treasure_results(0)
+        print("You found no treasure!")
+        display_treasure_results(0, 0)
 
-def display_treasure_results(gold):
+def display_treasure_results(gold, jewels):
+    total_value = gold + jewels
+
     treasure_window = tk.Toplevel(root)
     treasure_window.title("Treasure Found")
-    treasure_window.geometry("400x200")
+    treasure_window.geometry("400x250")
     treasure_window.configure(bg="#333")
 
     tk.Label(
         treasure_window,
-        text=f"You found {gold} Gold Marks!",
+        text=f"Gold Marks Found: {gold}",
         font=("Arial", 16),
         fg="white",
         bg="#333",
-    ).pack(pady=20)
+    ).pack(pady=10)
+
+    tk.Label(
+        treasure_window,
+        text=f"Jewel Value Found: {jewels}",
+        font=("Arial", 16),
+        fg="white",
+        bg="#333",
+    ).pack(pady=10)
 
     tk.Label(
         treasure_window,
@@ -1119,7 +1334,6 @@ def update_gold_label():
     global gold_label
     if gold_label:
         gold_label.config(text=f"Total Gold: {party_gold} Gold Marks")
-
 
 def calculate_monster_treasure(monster, tile_visited=False):
 
@@ -1211,6 +1425,5 @@ start_button = tk.Button(
     height=3
 )
 start_button.pack(expand=True)
-
 
 root.mainloop()
