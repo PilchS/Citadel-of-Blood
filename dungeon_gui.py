@@ -646,7 +646,7 @@ def add_encounter_buttons(parent_frame, canvas, monster, party, monsters, combat
     close_button = tk.Button(
         button_frame,
         text="Close",
-        state=tk.DISABLED,
+        state=tk.DISABLED,  # Start with the close button disabled
         command=lambda: on_close(encounter_window),
         bg="#555",
         fg="white",
@@ -656,6 +656,7 @@ def add_encounter_buttons(parent_frame, canvas, monster, party, monsters, combat
     close_button.pack(pady=20)
 
     return close_button
+
 
 def add_leave_button(dungeon_canvas, starting_tile):
     def leave_dungeon():
@@ -756,11 +757,25 @@ def handle_negotiation(monster, canvas, button_frame, negotiate_button, combat_l
         message = f"The monster is intimidated and leaves some treasure! Roll: {roll}"
         determine_treasure(monster)
         update_gold_label()
-        enable_close_button()
+        
+        # Disable all buttons and enable close button
+        for widget in button_frame.winfo_children():
+            if isinstance(widget, tk.Button):  # Check if the widget is a tk.Button
+                widget.config(state=tk.DISABLED)
+        
+        enable_close_button()  # Enable the close button after success
+
     elif roll >= 7:
         result = "Agreement"
         message = f"The monster agrees to let the party pass! Roll: {roll}"
-        enable_close_button()
+        
+        # Disable all buttons and enable close button
+        for widget in button_frame.winfo_children():
+            if isinstance(widget, tk.Button):  # Check if the widget is a tk.Button
+                widget.config(state=tk.DISABLED)
+        
+        enable_close_button()  # Enable the close button after success
+
     else:
         result = "Failure"
         message = f"Negotiation failed. Roll: {roll}"
@@ -769,6 +784,7 @@ def handle_negotiation(monster, canvas, button_frame, negotiate_button, combat_l
     negotiate_button.config(state=tk.DISABLED)
     print(message)
     return result
+
 
 def handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat_log, enable_close_button):
     global party_gold
@@ -807,7 +823,22 @@ def handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat
             message = f"The monster accepts your bribe of {offer} Gold Marks and leaves peacefully!"
             append_to_combat_log(combat_log, message)
             print(message)
+
+            # Disable all combat buttons inside the encounter window
+            for widget in button_frame.winfo_children():
+                if isinstance(widget, tk.Button):  # Check if the widget is a tk.Button
+                    widget.config(state=tk.DISABLED)
+
+            # Disable movement buttons
+            for button in movement_buttons.values():
+                button.config(state=tk.DISABLED)
+
+            # Explicitly disable the bribe button
+            bribe_button.config(state=tk.DISABLED)
+
+            # Enable the close button
             enable_close_button()
+
         else:
             message = f"The monster rejects your bribe of {offer} Gold Marks!"
             append_to_combat_log(combat_log, message)
@@ -818,6 +849,10 @@ def handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat
         message = "Invalid input. Please enter a valid number."
         append_to_combat_log(combat_log, message)
         print(message)
+
+
+
+
 
 PARTY_ATTACK_OPTIONS = {
     1: ["a"],
