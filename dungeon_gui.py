@@ -19,7 +19,7 @@ player = Player()
 revealed_tiles = set()
 monsters_in_rooms = {}
 movement_buttons = {}
-party_gold = 0
+party_gold = 1000
 gold_label = None
 spawned_monsters = {}
 
@@ -711,12 +711,13 @@ def add_leave_button(dungeon_canvas, starting_tile):
     def leave_dungeon():
         global party, movement_buttons
 
-        if player.position == starting_tile and "end_cleared" in dungeon_data and dungeon_data["end_cleared"]:
+        # Check if the player has 1000 gold marks
+        if party_gold >= 1000:
             messagebox.showinfo(
                 "Victory!",
-                "You have visited the end room and returned to the start. You won the game!"
+                "Congratulations! You have amassed 1000 Gold Marks and won the game!"
             )
-
+            # Disable movement buttons after victory
             for button in movement_buttons.values():
                 button.config(state=tk.DISABLED)
 
@@ -724,6 +725,7 @@ def add_leave_button(dungeon_canvas, starting_tile):
 
             return
 
+        # If not, heal the party and proceed as usual
         for member in party:
             if member["WP"] > 0:
                 member["WP"] = member["Max WP"]
@@ -731,6 +733,7 @@ def add_leave_button(dungeon_canvas, starting_tile):
             "Party Status",
             "The party members have been healed and are ready for the next adventure!"
         )
+
 
     leave_button = tk.Button(
         dungeon_canvas,
