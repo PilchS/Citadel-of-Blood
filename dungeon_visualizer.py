@@ -4,6 +4,7 @@ import os
 
 tile_folder = "tiles"
 tile_size = 53
+border_size = 3
 
 def load_tiles():
     tiles = {}
@@ -26,6 +27,15 @@ def draw_dungeon_visualization(used_positions, tiles, window_width, window_heigh
     start_x, start_y = starting_position
 
     canvas = Image.new("RGBA", (window_width, window_height), (255, 255, 255, 0))
+
+    draw = ImageDraw.Draw(canvas)
+    border_color = (0, 0, 0, 255)
+
+    draw.rectangle([0, 0, window_width, border_size], fill=border_color)
+    draw.rectangle([0, window_height - border_size, window_width, window_height], fill=border_color)
+
+    draw.rectangle([0, 0, border_size, window_height], fill=border_color)
+    draw.rectangle([window_width - border_size, 0, window_width, window_height], fill=border_color)
 
     for (x, y), data in used_positions.items():
         if isinstance(data, str):
@@ -53,7 +63,8 @@ def draw_dungeon_visualization(used_positions, tiles, window_width, window_heigh
         pos_x = offset_x + (y - start_y) * tile_size
         pos_y = offset_y + (x - start_x) * tile_size
 
-        canvas.paste(rotated_tile, (pos_x, pos_y), rotated_tile)
+        if (pos_x + tile_size > border_size and pos_x < window_width - border_size and
+            pos_y + tile_size > border_size and pos_y < window_height - border_size):
+            canvas.paste(rotated_tile, (pos_x, pos_y), rotated_tile)
 
     return canvas
-

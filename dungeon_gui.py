@@ -21,6 +21,7 @@ monsters_in_rooms = {}
 movement_buttons = {}
 party_gold = 0
 gold_label = None
+spawned_monsters = {}
 
 MONSTER_GOLD_REWARDS = {
     "Chimaera": {
@@ -314,48 +315,113 @@ def reorganize_party():
 
     tk.Label(reorganize_frame, text="Reorganize Your Party", font=("Arial", 16), fg="white", bg="#333").pack()
 
-    party_listbox = tk.Listbox(reorganize_frame, selectmode=tk.SINGLE, bg="#222", fg="white")
-    party_listbox.pack(fill=tk.BOTH, expand=True)
+    # Create a Canvas widget to display party members in rows with borders
+    party_canvas = tk.Canvas(reorganize_frame, bg="#222", highlightthickness=0)
+    party_canvas.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-    for member in party:
-        member["Max WP"] = member.get("Max WP", member["WP"])
-        party_listbox.insert(tk.END, f"{member['Name']} ({member['Race']}) - WP: {member['WP']}/{member['Max WP']}")
+    # Variable to track the currently selected index
+    selected_index = tk.IntVar(value=-1)
 
+    # Function to update the Canvas with party members in rows
+    def update_canvas():
+        party_canvas.delete("all")  # Clear the Canvas
+        row_length = 3  # Number of members per row (adjust as needed)
+        member_width = 200  # Width of each member's box
+        member_height = 50  # Height of each member's box
+        padding = 10  # Spacing between members
+
+        for i, member in enumerate(party):
+            member["Max WP"] = member.get("Max WP", member["WP"])
+            member_str = f"{member['Name']} ({member['Race']}) - WP: {member['WP']}/{member['Max WP']}"
+
+            # Calculate position
+            row = i // row_length
+            col = i % row_length
+            x0 = col * (member_width + padding)
+            y0 = row * (member_height + padding)
+            x1 = x0 + member_width
+            y1 = y0 + member_height
+
+            # Draw a border around the member
+            if i == selected_index.get():
+                party_canvas.create_rectangle(x0, y0, x1, y1, fill="#555", outline="white", width=2)
+            else:
+                party_canvas.create_rectangle(x0, y0, x1, y1, fill="#333", outline="white", width=2)
+
+            # Add the member's text
+            party_canvas.create_text(
+                (x0 + x1) / 2, (y0 + y1) / 2,
+                text=member_str,
+                fill="white",
+                font=("Arial", 12),
+                anchor="center"
+            )
+
+    # Function to handle mouse clicks on the Canvas
+    def on_canvas_click(event):
+        # Calculate which member was clicked
+        row_length = 3  # Must match the row_length in update_canvas
+        member_width = 200  # Must match the member_width in update_canvas
+        member_height = 50  # Must match the member_height in update_canvas
+        padding = 10  # Must match the padding in update_canvas
+
+        col = event.x // (member_width + padding)
+        row = event.y // (member_height + padding)
+        member_index = row * row_length + col
+
+        if member_index < len(party):
+            selected_index.set(member_index)
+            update_canvas()
+
+    # Bind the click event to the Canvas
+    party_canvas.bind("<Button-1>", on_canvas_click)
+
+    # Change the cursor to indicate interactivity
+    party_canvas.config(cursor="hand2")
+
+    # Initial update of the Canvas
+    update_canvas()
+
+    # Function to move a member up
     def move_up():
-        selected = party_listbox.curselection()
-        if selected and selected[0] > 0:
-            idx = selected[0]
+        idx = selected_index.get()
+        if idx > 0:
+            # Swap the members in the party list
             party[idx - 1], party[idx] = party[idx], party[idx - 1]
-            update_listbox()
-            party_listbox.selection_set(idx - 1)
+            # Update the Canvas
+            update_canvas()
+            # Update the selected index
+            selected_index.set(idx - 1)
 
+    # Function to move a member down
     def move_down():
-        selected = party_listbox.curselection()
-        if selected and selected[0] < len(party) - 1:
-            idx = selected[0]
+        idx = selected_index.get()
+        if idx < len(party) - 1:
+            # Swap the members in the party list
             party[idx + 1], party[idx] = party[idx], party[idx + 1]
-            update_listbox()
-            party_listbox.selection_set(idx + 1)
+            # Update the Canvas
+            update_canvas()
+            # Update the selected index
+            selected_index.set(idx + 1)
 
-    def update_listbox():
-        party_listbox.delete(0, tk.END)
-        for member in party:
-            party_listbox.insert(tk.END, f"{member['Name']} ({member['Race']}) - WP: {member['WP']}/{member['Max WP']}")
-
+    # Create a frame for the buttons
     button_frame = tk.Frame(reorganize_frame, bg="#333")
     button_frame.pack(pady=10)
 
+    # Add the move up and move down buttons
     tk.Button(button_frame, text="Move Up", command=move_up, bg="#555", fg="white").grid(row=0, column=0, padx=5)
     tk.Button(button_frame, text="Move Down", command=move_down, bg="#555", fg="white").grid(row=0, column=1, padx=5)
 
+    # Function to finalize the party and start the dungeon
     def finalize_party():
         reorganize_frame.pack_forget()
         start_dungeon()
 
+    # Add the finalize button
     tk.Button(reorganize_frame, text="Finalize", command=finalize_party, bg="#555", fg="white").pack(pady=10)
 
 def check_and_spawn_monster(player_position):
-    global monsters_in_rooms
+    global monsters_in_rooms, spawned_monsters
     adjacent_directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
     for dx, dy in adjacent_directions:
@@ -379,6 +445,12 @@ def check_and_spawn_monster(player_position):
                 monster = roll_monster(ROOM_MONSTER_TABLE)
                 monsters_in_rooms[adjacent_tile] = monster
                 print(f"A {monster['Name']} spawned at {adjacent_tile}, type: {tile_type}.")
+
+                spawned_monsters[adjacent_tile] = {
+                    "monsters": [{"Name": monster["Name"], "WP": monster["WP"], "Max WP": monster["WP"], "NV": monster.get("NV", 0)} for _ in range(monster["Count"])]
+                }
+
+
 
 def start_dungeon():
     global dungeon_data, tiles, revealed_tiles, monsters_in_rooms, movement_buttons, starting_room_position
@@ -646,7 +718,7 @@ def add_encounter_buttons(parent_frame, canvas, monster, party, monsters, combat
     close_button = tk.Button(
         button_frame,
         text="Close",
-        state=tk.DISABLED,  # Start with the close button disabled
+        state=tk.DISABLED,
         command=lambda: on_close(encounter_window),
         bg="#555",
         fg="white",
@@ -754,31 +826,35 @@ def handle_negotiation(monster, canvas, button_frame, negotiate_button, combat_l
     roll = sum(roll_dice(6, 2)) - monster["NV"]
     if roll > 10:
         result = "Intimidate"
-        message = f"The monster is intimidated and leaves some treasure! Roll: {roll}"
+        message = f"The monster is intimidated and leaves some treasure! Result: {roll}"
         determine_treasure(monster)
         update_gold_label()
         
-        # Disable all buttons and enable close button
         for widget in button_frame.winfo_children():
-            if isinstance(widget, tk.Button):  # Check if the widget is a tk.Button
+            if isinstance(widget, tk.Button):
                 widget.config(state=tk.DISABLED)
         
-        enable_close_button()  # Enable the close button after success
+        enable_close_button()
+
+        if player.position in spawned_monsters:
+            monsters_in_rooms[player.position] = spawned_monsters[player.position]["monsters"]
 
     elif roll >= 7:
         result = "Agreement"
-        message = f"The monster agrees to let the party pass! Roll: {roll}"
-        
-        # Disable all buttons and enable close button
+        message = f"The monster agrees to let the party pass! Result: {roll}"
+
         for widget in button_frame.winfo_children():
-            if isinstance(widget, tk.Button):  # Check if the widget is a tk.Button
+            if isinstance(widget, tk.Button):
                 widget.config(state=tk.DISABLED)
         
-        enable_close_button()  # Enable the close button after success
+        enable_close_button()
+
+        if player.position in spawned_monsters:
+            monsters_in_rooms[player.position] = spawned_monsters[player.position]["monsters"]
 
     else:
         result = "Failure"
-        message = f"Negotiation failed. Roll: {roll}"
+        message = f"Negotiation failed. Result: {roll}"
 
     append_to_combat_log(combat_log, f"Negotiation: {message}")
     negotiate_button.config(state=tk.DISABLED)
@@ -824,20 +900,19 @@ def handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat
             append_to_combat_log(combat_log, message)
             print(message)
 
-            # Disable all combat buttons inside the encounter window
             for widget in button_frame.winfo_children():
-                if isinstance(widget, tk.Button):  # Check if the widget is a tk.Button
+                if isinstance(widget, tk.Button):
                     widget.config(state=tk.DISABLED)
 
-            # Disable movement buttons
             for button in movement_buttons.values():
                 button.config(state=tk.DISABLED)
 
-            # Explicitly disable the bribe button
             bribe_button.config(state=tk.DISABLED)
 
-            # Enable the close button
             enable_close_button()
+
+            if player.position in spawned_monsters:
+                monsters_in_rooms[player.position] = spawned_monsters[player.position]["monsters"]
 
         else:
             message = f"The monster rejects your bribe of {offer} Gold Marks!"
@@ -849,10 +924,6 @@ def handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat
         message = "Invalid input. Please enter a valid number."
         append_to_combat_log(combat_log, message)
         print(message)
-
-
-
-
 
 PARTY_ATTACK_OPTIONS = {
     1: ["a"],
@@ -1244,17 +1315,19 @@ def open_encounter_window(monster_table, player_position):
     for monster in monsters:
         load_and_place_monsters(encounter_canvas, monster["Name"], len(monsters))
 
-    def on_close():
-        for button in movement_buttons.values():
-            button.config(state=tk.NORMAL)
-        encounter_window.destroy()
-
     encounter_window.protocol("WM_DELETE_WINDOW", prevent_close)
 
 def on_close(encounter_window):
+    global spawned_monsters
+
+    if player.position in spawned_monsters:
+        monsters_in_rooms[player.position] = spawned_monsters[player.position]["monsters"]
+
     for button in movement_buttons.values():
         button.config(state=tk.NORMAL)
     encounter_window.destroy()
+
+
 
 def determine_treasure(monster):
     global party_gold
