@@ -315,26 +315,22 @@ def reorganize_party():
 
     tk.Label(reorganize_frame, text="Reorganize Your Party", font=("Arial", 16), fg="white", bg="#333").pack()
 
-    # Create a Canvas widget to display party members in rows with borders
     party_canvas = tk.Canvas(reorganize_frame, bg="#222", highlightthickness=0)
     party_canvas.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-    # Variable to track the currently selected index
     selected_index = tk.IntVar(value=-1)
 
-    # Function to update the Canvas with party members in rows
     def update_canvas():
-        party_canvas.delete("all")  # Clear the Canvas
-        row_length = 3  # Number of members per row (adjust as needed)
-        member_width = 200  # Width of each member's box
-        member_height = 50  # Height of each member's box
-        padding = 10  # Spacing between members
+        party_canvas.delete("all")
+        row_length = 3
+        member_width = 200
+        member_height = 50
+        padding = 10
 
         for i, member in enumerate(party):
             member["Max WP"] = member.get("Max WP", member["WP"])
             member_str = f"{member['Name']} ({member['Race']}) - WP: {member['WP']}/{member['Max WP']}"
 
-            # Calculate position
             row = i // row_length
             col = i % row_length
             x0 = col * (member_width + padding)
@@ -342,13 +338,11 @@ def reorganize_party():
             x1 = x0 + member_width
             y1 = y0 + member_height
 
-            # Draw a border around the member
             if i == selected_index.get():
                 party_canvas.create_rectangle(x0, y0, x1, y1, fill="#555", outline="white", width=2)
             else:
                 party_canvas.create_rectangle(x0, y0, x1, y1, fill="#333", outline="white", width=2)
 
-            # Add the member's text
             party_canvas.create_text(
                 (x0 + x1) / 2, (y0 + y1) / 2,
                 text=member_str,
@@ -357,13 +351,11 @@ def reorganize_party():
                 anchor="center"
             )
 
-    # Function to handle mouse clicks on the Canvas
     def on_canvas_click(event):
-        # Calculate which member was clicked
-        row_length = 3  # Must match the row_length in update_canvas
-        member_width = 200  # Must match the member_width in update_canvas
-        member_height = 50  # Must match the member_height in update_canvas
-        padding = 10  # Must match the padding in update_canvas
+        row_length = 3
+        member_width = 200
+        member_height = 50
+        padding = 10
 
         col = event.x // (member_width + padding)
         row = event.y // (member_height + padding)
@@ -373,51 +365,36 @@ def reorganize_party():
             selected_index.set(member_index)
             update_canvas()
 
-    # Bind the click event to the Canvas
     party_canvas.bind("<Button-1>", on_canvas_click)
 
-    # Change the cursor to indicate interactivity
     party_canvas.config(cursor="hand2")
 
-    # Initial update of the Canvas
     update_canvas()
 
-    # Function to move a member up
     def move_up():
         idx = selected_index.get()
         if idx > 0:
-            # Swap the members in the party list
             party[idx - 1], party[idx] = party[idx], party[idx - 1]
-            # Update the Canvas
             update_canvas()
-            # Update the selected index
             selected_index.set(idx - 1)
 
-    # Function to move a member down
     def move_down():
         idx = selected_index.get()
         if idx < len(party) - 1:
-            # Swap the members in the party list
             party[idx + 1], party[idx] = party[idx], party[idx + 1]
-            # Update the Canvas
             update_canvas()
-            # Update the selected index
             selected_index.set(idx + 1)
 
-    # Create a frame for the buttons
     button_frame = tk.Frame(reorganize_frame, bg="#333")
     button_frame.pack(pady=10)
 
-    # Add the move up and move down buttons
     tk.Button(button_frame, text="Move Up", command=move_up, bg="#555", fg="white").grid(row=0, column=0, padx=5)
     tk.Button(button_frame, text="Move Down", command=move_down, bg="#555", fg="white").grid(row=0, column=1, padx=5)
 
-    # Function to finalize the party and start the dungeon
     def finalize_party():
         reorganize_frame.pack_forget()
         start_dungeon()
 
-    # Add the finalize button
     tk.Button(reorganize_frame, text="Finalize", command=finalize_party, bg="#555", fg="white").pack(pady=10)
 
 def check_and_spawn_monster(player_position):
@@ -823,43 +800,60 @@ def handle_negotiation(monster, canvas, button_frame, negotiate_button, combat_l
         negotiate_button.config(state=tk.DISABLED)
         return
 
-    roll = sum(roll_dice(6, 2)) - monster["NV"]
-    if roll > 10:
-        result = "Intimidate"
-        message = f"The monster is intimidated and leaves some treasure! Result: {roll}"
-        determine_treasure(monster)
-        update_gold_label()
-        
+    roll = sum(roll_dice(6, 2))
+    result = roll - monster["NV"]
+    
+    roll_result_text = f"Negotiation Roll: {roll} (Monster NV: {monster['NV']})"
+    append_to_combat_log(combat_log, roll_result_text)
+    print(roll_result_text)
+
+    roll_result_display = canvas.create_text(
+        canvas.winfo_width() // 2,
+        canvas.winfo_height() // 2 - 50,
+        text=roll_result_text,
+        fill="white",
+        font=("Arial", 14),
+        tags="roll_result"
+    )
+
+    def show_negotiation_result():
+        if result > 10:
+            negotiation_message = f"The monster is intimidated and leaves some treasure! Result: {result}"
+            determine_treasure(monster)
+            update_gold_label()
+            negotiate_button.config(state=tk.DISABLED)
+        elif result >= 7:
+            negotiation_message = f"The monster agrees to let the party pass! Result: {result}"
+            negotiate_button.config(state=tk.DISABLED)
+        else:
+            negotiation_message = f"Negotiation failed. Result: {result}"
+
+        append_to_combat_log(combat_log, f"Negotiation: {negotiation_message}")
+        print(negotiation_message)
+
+        canvas.delete(roll_result_display)
+
+        negotiation_result_display = canvas.create_text(
+            canvas.winfo_width() // 2,
+            canvas.winfo_height() // 2 + 50,
+            text=negotiation_message,
+            fill="white",
+            font=("Arial", 14),
+            tags="negotiation_result"
+        )
+
         for widget in button_frame.winfo_children():
             if isinstance(widget, tk.Button):
                 widget.config(state=tk.DISABLED)
-        
+
         enable_close_button()
 
         if player.position in spawned_monsters:
             monsters_in_rooms[player.position] = spawned_monsters[player.position]["monsters"]
 
-    elif roll >= 7:
-        result = "Agreement"
-        message = f"The monster agrees to let the party pass! Result: {roll}"
+    canvas.after(200, show_negotiation_result)
 
-        for widget in button_frame.winfo_children():
-            if isinstance(widget, tk.Button):
-                widget.config(state=tk.DISABLED)
-        
-        enable_close_button()
 
-        if player.position in spawned_monsters:
-            monsters_in_rooms[player.position] = spawned_monsters[player.position]["monsters"]
-
-    else:
-        result = "Failure"
-        message = f"Negotiation failed. Result: {roll}"
-
-    append_to_combat_log(combat_log, f"Negotiation: {message}")
-    negotiate_button.config(state=tk.DISABLED)
-    print(message)
-    return result
 
 
 def handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat_log, enable_close_button):
