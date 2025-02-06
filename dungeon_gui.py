@@ -821,12 +821,19 @@ def handle_negotiation(monster, canvas, button_frame, negotiate_button, combat_l
             negotiation_message = f"The monster is intimidated and leaves some treasure! Result: {result}"
             determine_treasure(monster)
             update_gold_label()
-            negotiate_button.config(state=tk.DISABLED)
+            for widget in button_frame.winfo_children():
+                if isinstance(widget, tk.Button):
+                    widget.config(state=tk.DISABLED)
+            enable_close_button()
         elif result >= 7:
             negotiation_message = f"The monster agrees to let the party pass! Result: {result}"
-            negotiate_button.config(state=tk.DISABLED)
+            for widget in button_frame.winfo_children():
+                if isinstance(widget, tk.Button):
+                    widget.config(state=tk.DISABLED)
+            enable_close_button()
         else:
             negotiation_message = f"Negotiation failed. Result: {result}"
+            negotiate_button.config(state=tk.DISABLED)
 
         append_to_combat_log(combat_log, f"Negotiation: {negotiation_message}")
         print(negotiation_message)
@@ -842,16 +849,10 @@ def handle_negotiation(monster, canvas, button_frame, negotiate_button, combat_l
             tags="negotiation_result"
         )
 
-        for widget in button_frame.winfo_children():
-            if isinstance(widget, tk.Button):
-                widget.config(state=tk.DISABLED)
-
-        enable_close_button()
-
-        if player.position in spawned_monsters:
-            monsters_in_rooms[player.position] = spawned_monsters[player.position]["monsters"]
-
     canvas.after(200, show_negotiation_result)
+
+
+
 
 
 
@@ -1243,7 +1244,7 @@ def update_combat_display(canvas, party, monsters):
             canvas.delete(tag)
 
 def open_encounter_window(monster_table, player_position):
-    global movement_buttons, encounter_canvas
+    global movement_buttons, encounter_canvas, gold_label, encounter_window
 
     for button in movement_buttons.values():
         button.config(state=tk.DISABLED)
@@ -1263,6 +1264,18 @@ def open_encounter_window(monster_table, player_position):
 
     encounter_canvas = tk.Canvas(main_frame, width=900, height=800, bg="#333", highlightthickness=0)
     encounter_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+    encounter_gold_label = tk.Label(
+        main_frame,
+        text=f"Total Gold: {party_gold} Gold Marks",
+        font=("Arial", 16),
+        fg="white",
+        bg="#333",
+        anchor="w",
+    )
+    encounter_gold_label.pack(side=tk.TOP, padx=10, pady=10)
+
+    update_gold_label()
 
     is_end_room = dungeon_data[player_position]["type"] == "end"
 
@@ -1310,6 +1323,23 @@ def open_encounter_window(monster_table, player_position):
         load_and_place_monsters(encounter_canvas, monster["Name"], len(monsters))
 
     encounter_window.protocol("WM_DELETE_WINDOW", prevent_close)
+
+def update_gold_label():
+    global gold_label, encounter_window
+
+    if gold_label:
+        gold_label.config(text=f"Total Gold: {party_gold} Gold Marks")
+
+    if 'encounter_window' in globals():
+        encounter_gold_label = next(
+            (widget for widget in encounter_window.winfo_children() 
+             if isinstance(widget, tk.Label) and "Gold" in widget.cget("text")), 
+            None
+        )
+        if encounter_gold_label:
+            encounter_gold_label.config(text=f"Total Gold: {party_gold} Gold Marks")
+
+
 
 def on_close(encounter_window):
     global spawned_monsters
