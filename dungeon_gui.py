@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, Toplevel, Label, Button, Entry
 from PIL import Image, ImageTk
 import random
 from dungeon_creator import create_dungeon
@@ -183,6 +183,87 @@ class EnhancedPlayer(Player):
         return self.connected_tiles.get(self.position, [])
 
 player = EnhancedPlayer()
+
+def show_character_selection_window(party):
+    selection_window = Toplevel()
+    selection_window.title("Character Selection")
+    selection_window.geometry("300x400")
+    selection_window.configure(bg="#333")
+    
+    Label(selection_window, text="Select a Character", font=("Arial", 14), fg="white", bg="#333").pack(pady=10)
+    
+    for hero in party:
+        Button(selection_window, text=hero['Name'], command=lambda h=hero: show_character_card(h),
+               bg="#555", fg="white", width=20).pack(pady=5)
+    
+    Button(selection_window, text="Close", command=selection_window.destroy, bg="#555", fg="white").pack(pady=20)
+
+def show_character_card(hero):
+    def save_changes():
+        try:
+            hero['WP'] = int(wp_entry.get())
+            hero['Magical Potential'] = int(mp_entry.get())
+            hero['RV'] = int(rv_entry.get())
+            hero['CB'] = int(cb_entry.get())
+            hero['Weapons'] = weapons_entry.get()
+            hero['Weapon Skill'] = weapon_skill_entry.get()
+            hero['Skill'] = skill_entry.get()
+            card_window.destroy()
+        except ValueError:
+            Label(card_window, text="Invalid input! Ensure numbers are used where required.", fg="red", bg="#333").pack()
+
+    card_window = Toplevel()
+    card_window.title(f"{hero['Name']}'s Character Card")
+    card_window.geometry("400x500")
+    card_window.configure(bg="#333")
+
+    Label(card_window, text=f"Name: {hero['Name']}", font=("Arial", 14), fg="white", bg="#333").pack(pady=5)
+    Label(card_window, text=f"Race: {hero['Race']}", font=("Arial", 14), fg="white", bg="#333").pack(pady=5)
+    
+    Label(card_window, text="WP:", fg="white", bg="#333").pack()
+    wp_entry = Entry(card_window, bg="#555", fg="white")
+    wp_entry.insert(0, hero['WP'])
+    wp_entry.pack()
+    
+    Label(card_window, text="Magical Potential:", fg="white", bg="#333").pack()
+    mp_entry = Entry(card_window, bg="#555", fg="white")
+    mp_entry.insert(0, hero.get('Magical Potential', 0))
+    mp_entry.pack()
+    
+    Label(card_window, text="Resistance Value:", fg="white", bg="#333").pack()
+    rv_entry = Entry(card_window, bg="#555", fg="white")
+    rv_entry.insert(0, hero['RV'])
+    rv_entry.pack()
+    
+    Label(card_window, text="Combat Bonus:", fg="white", bg="#333").pack()
+    cb_entry = Entry(card_window, bg="#555", fg="white")
+    cb_entry.insert(0, hero['CB'])
+    cb_entry.pack()
+    
+    Label(card_window, text="Weapons:", fg="white", bg="#333").pack()
+    weapons_entry = Entry(card_window, bg="#555", fg="white")
+    weapons_entry.insert(0, hero['Weapons'])
+    weapons_entry.pack()
+    
+    Label(card_window, text="Weapon Skill:", fg="white", bg="#333").pack()
+    weapon_skill_entry = Entry(card_window, bg="#555", fg="white")
+    weapon_skill_entry.insert(0, hero.get('Weapon Skill', 'N/A'))
+    weapon_skill_entry.pack()
+    
+    Label(card_window, text="Skill:", fg="white", bg="#333").pack()
+    skill_entry = Entry(card_window, bg="#555", fg="white")
+    skill_entry.insert(0, hero.get('Skill', 'N/A'))
+    skill_entry.pack()
+    
+    Button(card_window, text="Save Changes", command=save_changes, bg="#555", fg="white").pack(pady=10)
+    Button(card_window, text="Close", command=card_window.destroy, bg="#555", fg="white").pack(pady=10)
+
+def add_character_card_button(root, party, dungeon_canvas):
+    button_frame = tk.Frame(dungeon_canvas, bg="#333")
+    button_frame.pack(side=tk.BOTTOM, pady=10)
+    
+    Button(button_frame, text="Character Cards", command=lambda: show_character_selection_window(party),
+           bg="#555", fg="white", width=20).pack(pady=10)
 
 def start_game():
     global gold_label
@@ -512,6 +593,8 @@ def start_dungeon():
             print(f"Spawned predetermined monsters in the end room at {position}: Evil Hero, Troll, Evil Mage")
 
     update_leave_button = add_leave_button(dungeon_canvas, starting_room_position)
+
+    add_character_card_button(root, party, dungeon_canvas)
 
     def is_adjacent(current, target):
         cx, cy = current
