@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox, Toplevel, Label, Button, Entry
+from tkinter import Toplevel, Label, Button, Entry, messagebox
 from PIL import Image, ImageTk
 import random
 from dungeon_creator import create_dungeon
@@ -184,6 +184,30 @@ class EnhancedPlayer(Player):
 
 player = EnhancedPlayer()
 
+def start_game():
+    global gold_label
+    main_menu.pack_forget()
+    setup_party()
+
+    gold_label_frame = tk.Frame(root, bg="#333")
+    gold_label_frame.pack(side=tk.TOP, fill=tk.X)
+
+    gold_label = tk.Label(
+        gold_label_frame,
+        text=f"Total Gold: {party_gold} Gold Marks",
+        font=("Arial", 16),
+        fg="white",
+        bg="#333",
+        anchor="w",
+    )
+    gold_label.pack(pady=5, padx=10)
+
+def add_character_card_button(root, party, dungeon_canvas):
+    button_frame = tk.Frame(dungeon_canvas, bg="#333")
+    button_frame.pack(side=tk.BOTTOM, pady=10)
+    
+    Button(button_frame, text="Character Cards", command=lambda: show_character_selection_window(party),
+           bg="#555", fg="white", width=20).pack(pady=10)
 def show_character_selection_window(party):
     selection_window = Toplevel()
     selection_window.title("Character Selection")
@@ -257,31 +281,6 @@ def show_character_card(hero):
     
     Button(card_window, text="Save Changes", command=save_changes, bg="#555", fg="white").pack(pady=10)
     Button(card_window, text="Close", command=card_window.destroy, bg="#555", fg="white").pack(pady=10)
-
-def add_character_card_button(root, party, dungeon_canvas):
-    button_frame = tk.Frame(dungeon_canvas, bg="#333")
-    button_frame.pack(side=tk.BOTTOM, pady=10)
-    
-    Button(button_frame, text="Character Cards", command=lambda: show_character_selection_window(party),
-           bg="#555", fg="white", width=20).pack(pady=10)
-
-def start_game():
-    global gold_label
-    main_menu.pack_forget()
-    setup_party()
-
-    gold_label_frame = tk.Frame(root, bg="#333")
-    gold_label_frame.pack(side=tk.TOP, fill=tk.X)
-
-    gold_label = tk.Label(
-        gold_label_frame,
-        text=f"Total Gold: {party_gold} Gold Marks",
-        font=("Arial", 16),
-        fg="white",
-        bg="#333",
-        anchor="w",
-    )
-    gold_label.pack(pady=5, padx=10)
 
 def setup_party():
     setup_frame.pack(fill=tk.BOTH, expand=True)
@@ -508,8 +507,6 @@ def check_and_spawn_monster(player_position):
                     "monsters": [{"Name": monster["Name"], "WP": monster["WP"], "Max WP": monster["WP"], "NV": monster.get("NV", 0)} for _ in range(monster["Count"])]
                 }
 
-
-
 def start_dungeon():
     global dungeon_data, tiles, revealed_tiles, monsters_in_rooms, movement_buttons, starting_room_position
 
@@ -593,8 +590,6 @@ def start_dungeon():
             print(f"Spawned predetermined monsters in the end room at {position}: Evil Hero, Troll, Evil Mage")
 
     update_leave_button = add_leave_button(dungeon_canvas, starting_room_position)
-
-    add_character_card_button(root, party, dungeon_canvas)
 
     def is_adjacent(current, target):
         cx, cy = current
@@ -1636,6 +1631,7 @@ start_button = tk.Button(
     width=20,
     height=3
 )
+add_character_card_button(root, party, dungeon_canvas)
 start_button.pack(expand=True)
 
 root.mainloop()
