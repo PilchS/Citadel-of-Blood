@@ -900,40 +900,66 @@ def handle_negotiation(monster, canvas, button_frame, negotiate_button, combat_l
         tags="roll_result"
     )
 
-    def show_negotiation_result():
-        if result > 10:
-            negotiation_message = f"The monster is intimidated and leaves some treasure! Result: {result}"
-            determine_treasure(monster)
-            update_gold_label()
-            for widget in button_frame.winfo_children():
-                if isinstance(widget, tk.Button):
-                    widget.config(state=tk.DISABLED)
-            enable_close_button()
-        elif result >= 7:
-            negotiation_message = f"The monster agrees to let the party pass! Result: {result}"
-            for widget in button_frame.winfo_children():
-                if isinstance(widget, tk.Button):
-                    widget.config(state=tk.DISABLED)
-            enable_close_button()
+    def determine_negotiation_outcome():
+        def apply_choice(choice):
+            if choice == "intimidation":
+                negotiation_message = f"The monster is intimidated and leaves some treasure! Result: {result}"
+                determine_treasure(monster)
+                update_gold_label()
+                for widget in button_frame.winfo_children():
+                    if isinstance(widget, tk.Button):
+                        widget.config(state=tk.DISABLED)
+                enable_close_button()
+            elif choice == "success":
+                negotiation_message = f"The monster agrees to let the party pass! Result: {result}"
+                for widget in button_frame.winfo_children():
+                    if isinstance(widget, tk.Button):
+                        widget.config(state=tk.DISABLED)
+                enable_close_button()
+            else:
+                negotiation_message = f"Negotiation failed. Result: {result}"
+                negotiate_button.config(state=tk.DISABLED)
+
+            append_to_combat_log(combat_log, f"Negotiation: {negotiation_message}")
+            print(negotiation_message)
+
+            canvas.delete(roll_result_display)
+            
+            canvas.create_text(
+                canvas.winfo_width() // 2,
+                canvas.winfo_height() // 2 + 50,
+                text=negotiation_message,
+                fill="white",
+                font=("Arial", 14),
+                tags="negotiation_result"
+            )
+        
+        if magic_enabled:
+            choice_window = tk.Toplevel()
+            choice_window.title("Choose Negotiation Outcome")
+            tk.Label(choice_window, text="Choose how the negotiation ends:").pack()
+            
+            tk.Button(choice_window, text="Fail", command=lambda: [apply_choice("fail"), choice_window.destroy()]).pack()
+            tk.Button(choice_window, text="Success", command=lambda: [apply_choice("success"), choice_window.destroy()]).pack()
+            tk.Button(choice_window, text="Intimidation", command=lambda: [apply_choice("intimidation"), choice_window.destroy()]).pack()
         else:
-            negotiation_message = f"Negotiation failed. Result: {result}"
-            negotiate_button.config(state=tk.DISABLED)
+            if result > 10:
+                apply_choice("intimidation")
+            elif result >= 7:
+                apply_choice("success")
+            else:
+                apply_choice("fail")
+    
+    if magic_enabled:
+        use_magic_window = tk.Toplevel()
+        use_magic_window.title("Use Magic in Negotiation?")
+        tk.Label(use_magic_window, text="Do you want to use magic?").pack()
+        
+        tk.Button(use_magic_window, text="Yes", command=lambda: [determine_negotiation_outcome(), use_magic_window.destroy()]).pack()
+        tk.Button(use_magic_window, text="No", command=lambda: [use_magic_window.destroy(), determine_negotiation_outcome()]).pack()
+    else:
+        canvas.after(200, determine_negotiation_outcome)
 
-        append_to_combat_log(combat_log, f"Negotiation: {negotiation_message}")
-        print(negotiation_message)
-
-        canvas.delete(roll_result_display)
-
-        negotiation_result_display = canvas.create_text(
-            canvas.winfo_width() // 2,
-            canvas.winfo_height() // 2 + 50,
-            text=negotiation_message,
-            fill="white",
-            font=("Arial", 14),
-            tags="negotiation_result"
-        )
-
-    canvas.after(200, show_negotiation_result)
 
 def handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat_log, enable_close_button):
     global party_gold
@@ -1603,30 +1629,34 @@ def add_save_button(parent_frame):
     save_button = tk.Button(
         parent_frame,
         text="Save Game",
-        command=lambda: save_game(player, dungeon_data, monsters_in_rooms, party, party_gold),
+        command=lambda: save_game(player, dungeon_data, monsters_in_rooms, party, party_gold, magic_enabled),
         bg="#555",
         fg="white"
     )
     save_button.pack(side=tk.RIGHT, padx=10)
 
 def load_saved_game():
-    global player, dungeon_data, monsters_in_rooms, party, party_gold
-    
+    global player, dungeon_data, monsters_in_rooms, party, party_gold, magic_enabled
+
     save_data = load_game()
     if save_data:
         player.position = tuple(save_data["player_position"])
         dungeon_data = save_data["dungeon_data"]
         monsters_in_rooms = save_data["monsters_in_rooms"]
-        party = save_data.get("party", [])  
+        party = save_data.get("party", [])
         party_gold = save_data.get("party_gold", 1000)
+        magic_enabled = save_data.get("magic_enabled", False)  # <-- Load magic state
 
-        print("Restored party after loading:", party)  
+        print(f"Magic Enabled (Loaded): {magic_enabled}")
 
         update_character_card_buttons()
         main_menu.pack_forget()
-        update_gold_label()  
-        
-        start_dungeon()  
+        update_gold_label()
+
+        # Update magic checkbox state
+        magic_status_label.config(text="ON" if magic_enabled else "OFF")
+
+        start_dungeon()
 
 
 def update_character_card_buttons():
@@ -1637,11 +1667,21 @@ def update_character_card_buttons():
 
     add_character_card_button(root, party, dungeon_canvas)
 
+def toggle_magic():
+    global magic_enabled
+    magic_enabled = not magic_enabled
+    magic_status_label.config(text="ON" if magic_enabled else "OFF")
+    print("Magic ON" if magic_enabled else "Magic OFF")
+
+
+
 root = tk.Tk()
 root.title("Citadel of Blood")
 root.geometry("800x600")
 root.configure(bg="#333")
 root.resizable(False, False)
+
+magic_enabled = False
 
 main_menu = tk.Frame(root, bg="#333")
 setup_frame = tk.Frame(root, bg="#333")
@@ -1652,6 +1692,18 @@ combat_frame = tk.Frame(root, bg="#333")
 
 main_menu.pack(fill=tk.BOTH, expand=True)
 tk.Label(main_menu, text="Citadel of Blood", font=("Arial", 24), fg="white", bg="#333").pack()
+
+magic_frame = tk.Frame(main_menu, bg="#333")
+magic_frame.pack(pady=10)
+
+magic_checkbox = tk.Checkbutton(
+    magic_frame, text="Magic", font=("Arial", 16), fg="white", bg="#333",
+    selectcolor="#333", command=toggle_magic
+)
+magic_checkbox.pack(side=tk.LEFT)
+
+magic_status_label = tk.Label(magic_frame, text="OFF", font=("Arial", 16), fg="white", bg="#333")
+magic_status_label.pack(side=tk.RIGHT, padx=10)
 
 start_button = tk.Button(
     main_menu,

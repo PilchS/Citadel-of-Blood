@@ -10,7 +10,7 @@ def ensure_save_folder():
     if not os.path.exists(SAVE_FOLDER):
         os.makedirs(SAVE_FOLDER)
 
-def save_game(player, dungeon_data, monsters_in_rooms, party, party_gold):
+def save_game(player, dungeon_data, monsters_in_rooms, party, party_gold, magic_enabled):
     ensure_save_folder()
 
     save_name = simpledialog.askstring("Save Game", "Enter save name:")
@@ -25,10 +25,9 @@ def save_game(player, dungeon_data, monsters_in_rooms, party, party_gold):
         "dungeon_data": {str(k): v for k, v in dungeon_data.items()},
         "monsters_in_rooms": {str(k): v for k, v in monsters_in_rooms.items()},
         "party_gold": party_gold,
-        "party": party
+        "party": party,
+        "magic_enabled": magic_enabled  # <-- Add this line
     }
-
-    print("Saving party data:", party)
 
     try:
         with open(save_path, "w") as file:
@@ -36,6 +35,7 @@ def save_game(player, dungeon_data, monsters_in_rooms, party, party_gold):
         messagebox.showinfo("Game Saved", f"Game saved as '{save_name}'")
     except Exception as e:
         messagebox.showerror("Save Error", f"An error occurred while saving: {str(e)}")
+
 
 
 def load_game():
@@ -62,11 +62,13 @@ def load_game():
         save_data["dungeon_data"] = {eval(k): v for k, v in save_data["dungeon_data"].items()}
         save_data["monsters_in_rooms"] = {eval(k): v for k, v in save_data["monsters_in_rooms"].items()}
 
-        global party, party_gold
+        global party, party_gold, magic_enabled
         party = save_data.get("party", [])
         party_gold = save_data.get("party_gold", 1000)
+        magic_enabled = save_data.get("magic_enabled", False)  # <-- Retrieve saved magic state
 
-        print("Loaded party:", party)
+        print(f"Loaded party: {party}")
+        print(f"Magic Enabled: {magic_enabled}")
 
         messagebox.showinfo("Game Loaded", f"Game '{save_name}' successfully loaded.")
         return save_data
