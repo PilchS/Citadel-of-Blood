@@ -1,0 +1,122 @@
+{
+    "player_position": [
+        7,
+        7
+    ],
+    "dungeon_data": {
+        "(4, 4)": {
+            "room": "start",
+            "type": "start"
+        },
+        "(4, 5)": {
+            "room": "e1",
+            "type": "corridor"
+        },
+        "(3, 5)": {
+            "room": "t1",
+            "type": "room"
+        },
+        "(3, 4)": {
+            "room": "p1",
+            "type": "room"
+        },
+        "(3, 3)": {
+            "room": "b1",
+            "type": "corridor"
+        },
+        "(4, 3)": {
+            "room": "c3",
+            "type": "corridor"
+        },
+        "(5, 3)": {
+            "room": "e2",
+            "type": "corridor"
+        },
+        "(5, 4)": {
+            "room": "s1",
+            "type": "room"
+        },
+        "(6, 4)": {
+            "room": "p1",
+            "type": "room"
+        },
+        "(7, 4)": {
+            "room": "f1",
+            "type": "corridor"
+        },
+        "(8, 4)": {
+            "room": "end",
+            "type": "end"
+        }
+    },
+    "monsters_in_rooms": {},
+    "party_gold": 1000,
+    "party": [
+        {
+            "Name": "Wendolyn",
+            "Race": "Human",
+            "WP": 7,
+            "MP": "4/3/2",
+            "RV": 2,
+            "CB": 1,
+            "Weapons": "Sword, Dagger",
+            "Weapon Skill": "+2 Dagger",
+            "Skill": "4 Hellgate",
+            "Max WP": 7
+        },
+        {
+            "Name": "Almuric",
+            "Race": "Human",
+            "WP": 8,
+            "MP": "1/1/2",
+            "RV": 2,
+            "CB": 3,
+            "Weapons": "Sword, Dagger",
+            "Weapon Skill": "+2 Sword",
+            "Skill": "1 Hellgate",
+            "Max WP": 8
+        },
+        {
+            "Name": "Zareth",
+            "Race": "Human",
+            "WP": 9,
+            "MP": "0/0/0",
+            "RV": 4,
+            "CB": 4,
+            "Weapons": "Sword, Throw Dagger",
+            "Weapon Skill": "+1 Sword",
+            "Skill": "3 Hellgate",
+            "Max WP": 9
+        },
+        {
+            "Name": "",
+            "Race": "Human",
+            "WP": 5,
+            "Max WP": 5,
+            "Weapons": "Sword, Sword",
+            "RV": 2,
+            "CB": 0,
+            "Magical Potential": "0"
+        },
+        {
+            "Name": "",
+            "Race": "Human",
+            "WP": 5,
+            "Max WP": 5,
+            "Weapons": "Sword, Sword",
+            "RV": 2,
+            "CB": 0,
+            "Magical Potential": "0"
+        },
+        {
+            "Name": "",
+            "Race": "Human",
+            "WP": 5,
+            "Max WP": 5,
+            "Weapons": "Sword, Sword",
+            "RV": 2,
+            "CB": 0,
+            "Magical Potential": "0"
+        }
+    ]
+}

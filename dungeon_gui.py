@@ -11,6 +11,7 @@ from main import setup_initiates, combat_sequence, append_to_combat_log
 import os
 from helper_functions import roll_dice
 from tables import BRIBERY_TABLE, COMBAT_RESULTS_TABLE, TREASURE_TABLE
+from save_load import save_game, load_game
 
 party = []
 dungeon_data = {}
@@ -201,6 +202,7 @@ def start_game():
         anchor="w",
     )
     gold_label.pack(pady=5, padx=10)
+    add_save_button(gold_label_frame)
 
 def add_character_card_button(root, party, dungeon_canvas):
     button_frame = tk.Frame(dungeon_canvas, bg="#333")
@@ -305,6 +307,9 @@ def setup_party():
     )
     create_initiates_button.pack(side=tk.BOTTOM, pady=10, padx=10)
     create_initiates_button.place(relx=0.5, rely=1.0, anchor="s")
+
+    add_character_card_button(root, party, dungeon_canvas)
+
 
 def create_initiates():
     setup_frame.pack_forget()
@@ -511,7 +516,8 @@ def start_dungeon():
     global dungeon_data, tiles, revealed_tiles, monsters_in_rooms, movement_buttons, starting_room_position
 
     tiles = load_tiles()
-    dungeon_data = create_dungeon(10)
+    if not dungeon_data: 
+        dungeon_data = create_dungeon(10)
 
     if not dungeon_data:
         print("Dungeon creation failed.")
@@ -789,13 +795,11 @@ def add_leave_button(dungeon_canvas, starting_tile):
     def leave_dungeon():
         global party, movement_buttons
 
-        # Check if the player has 1000 gold marks
         if party_gold >= 1000:
             messagebox.showinfo(
                 "Victory!",
                 "Congratulations! You have amassed 1000 Gold Marks and won the game!"
             )
-            # Disable movement buttons after victory
             for button in movement_buttons.values():
                 button.config(state=tk.DISABLED)
 
@@ -803,7 +807,6 @@ def add_leave_button(dungeon_canvas, starting_tile):
 
             return
 
-        # If not, heal the party and proceed as usual
         for member in party:
             if member["WP"] > 0:
                 member["WP"] = member["Max WP"]
@@ -931,12 +934,6 @@ def handle_negotiation(monster, canvas, button_frame, negotiate_button, combat_l
         )
 
     canvas.after(200, show_negotiation_result)
-
-
-
-
-
-
 
 def handle_bribe(monster, canvas, button_frame, gold_entry, bribe_button, combat_log, enable_close_button):
     global party_gold
@@ -1398,7 +1395,6 @@ def open_encounter_window(monster_table, player_position):
         encounter_window,
         is_end_room=is_end_room
     )
-
     load_and_place_party(encounter_canvas)
     for monster in monsters:
         load_and_place_monsters(encounter_canvas, monster["Name"], len(monsters))
@@ -1419,8 +1415,6 @@ def update_gold_label():
         )
         if encounter_gold_label:
             encounter_gold_label.config(text=f"Total Gold: {party_gold} Gold Marks")
-
-
 
 def on_close(encounter_window):
     global spawned_monsters
@@ -1605,6 +1599,44 @@ def load_and_place_party(canvas):
 
     canvas.party_image_refs = image_refs
 
+def add_save_button(parent_frame):
+    save_button = tk.Button(
+        parent_frame,
+        text="Save Game",
+        command=lambda: save_game(player, dungeon_data, monsters_in_rooms, party, party_gold),
+        bg="#555",
+        fg="white"
+    )
+    save_button.pack(side=tk.RIGHT, padx=10)
+
+def load_saved_game():
+    global player, dungeon_data, monsters_in_rooms, party, party_gold
+    
+    save_data = load_game()
+    if save_data:
+        player.position = tuple(save_data["player_position"])
+        dungeon_data = save_data["dungeon_data"]
+        monsters_in_rooms = save_data["monsters_in_rooms"]
+        party = save_data.get("party", [])  
+        party_gold = save_data.get("party_gold", 1000)
+
+        print("Restored party after loading:", party)  
+
+        update_character_card_buttons()
+        main_menu.pack_forget()
+        update_gold_label()  
+        
+        start_dungeon()  
+
+
+def update_character_card_buttons():
+    global party
+    for widget in dungeon_canvas.winfo_children():
+        if isinstance(widget, tk.Button) and widget.cget("text") == "Character Cards":
+            widget.destroy()
+
+    add_character_card_button(root, party, dungeon_canvas)
+
 root = tk.Tk()
 root.title("Citadel of Blood")
 root.geometry("800x600")
@@ -1631,7 +1663,20 @@ start_button = tk.Button(
     width=20,
     height=3
 )
-add_character_card_button(root, party, dungeon_canvas)
 start_button.pack(expand=True)
+
+button_frame = tk.Frame(main_menu, bg="#333")
+button_frame.pack()
+load_button = tk.Button(
+    button_frame,
+    text="Load Game",
+    command=lambda: load_saved_game(),
+    bg="#555",
+    fg="white",
+    font=("Arial", 18),
+    width=20,
+    height=3
+)
+load_button.pack(side=tk.RIGHT, padx=5)
 
 root.mainloop()
