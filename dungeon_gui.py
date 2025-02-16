@@ -1452,8 +1452,6 @@ def on_close(encounter_window):
         button.config(state=tk.NORMAL)
     encounter_window.destroy()
 
-
-
 def determine_treasure(monster):
     global party_gold
 
@@ -1558,9 +1556,15 @@ def display_treasure_results(gold, jewels):
     ).pack(pady=10)
 
 def update_gold_label():
-    global gold_label
+    global gold_label, encounter_window
+
     if gold_label:
         gold_label.config(text=f"Total Gold: {party_gold} Gold Marks")
+
+    if 'encounter_window' in globals():
+        for widget in encounter_window.winfo_children():
+            if isinstance(widget, tk.Label) and "Gold" in widget.cget("text"):
+                widget.config(text=f"Total Gold: {party_gold} Gold Marks")
 
 def calculate_monster_treasure(monster, tile_visited=False):
 
@@ -1635,8 +1639,9 @@ def add_save_button(parent_frame):
     )
     save_button.pack(side=tk.RIGHT, padx=10)
 
+
 def load_saved_game():
-    global player, dungeon_data, monsters_in_rooms, party, party_gold, magic_enabled
+    global player, dungeon_data, monsters_in_rooms, party, party_gold, magic_enabled, gold_label
 
     save_data = load_game()
     if save_data:
@@ -1645,17 +1650,31 @@ def load_saved_game():
         monsters_in_rooms = save_data["monsters_in_rooms"]
         party = save_data.get("party", [])
         party_gold = save_data.get("party_gold", 1000)
-        magic_enabled = save_data.get("magic_enabled", False)  # <-- Load magic state
+        magic_enabled = save_data.get("magic_enabled", False)
 
         print(f"Magic Enabled (Loaded): {magic_enabled}")
 
-        update_character_card_buttons()
         main_menu.pack_forget()
+        
+        if gold_label:
+            gold_label.pack_forget()
+
+        gold_label_frame = tk.Frame(root, bg="#333")
+        gold_label_frame.pack(side=tk.TOP, fill=tk.X)
+
+        gold_label = tk.Label(
+            gold_label_frame,
+            text=f"Total Gold: {party_gold} Gold Marks",
+            font=("Arial", 16),
+            fg="white",
+            bg="#333",
+            anchor="w",
+        )
+        gold_label.pack(pady=5, padx=10)
+
+        add_save_button(gold_label_frame)
+
         update_gold_label()
-
-        # Update magic checkbox state
-        magic_status_label.config(text="ON" if magic_enabled else "OFF")
-
         start_dungeon()
 
 
@@ -1672,8 +1691,6 @@ def toggle_magic():
     magic_enabled = not magic_enabled
     magic_status_label.config(text="ON" if magic_enabled else "OFF")
     print("Magic ON" if magic_enabled else "Magic OFF")
-
-
 
 root = tk.Tk()
 root.title("Citadel of Blood")

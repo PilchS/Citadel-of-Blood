@@ -6,7 +6,6 @@ from tkinter import messagebox, simpledialog
 SAVE_FOLDER = "saves"
 
 def ensure_save_folder():
-    """Ensure the saves directory exists."""
     if not os.path.exists(SAVE_FOLDER):
         os.makedirs(SAVE_FOLDER)
 
@@ -26,7 +25,7 @@ def save_game(player, dungeon_data, monsters_in_rooms, party, party_gold, magic_
         "monsters_in_rooms": {str(k): v for k, v in monsters_in_rooms.items()},
         "party_gold": party_gold,
         "party": party,
-        "magic_enabled": magic_enabled  # <-- Add this line
+        "magic_enabled": magic_enabled
     }
 
     try:
@@ -65,7 +64,7 @@ def load_game():
         global party, party_gold, magic_enabled
         party = save_data.get("party", [])
         party_gold = save_data.get("party_gold", 1000)
-        magic_enabled = save_data.get("magic_enabled", False)  # <-- Retrieve saved magic state
+        magic_enabled = save_data.get("magic_enabled", False)
 
         print(f"Loaded party: {party}")
         print(f"Magic Enabled: {magic_enabled}")
@@ -79,7 +78,6 @@ def load_game():
 
 
 def add_save_button(parent_frame, player, dungeon_data, monsters_in_rooms):
-    """Add a Save button to the GUI."""
     save_button = tk.Button(
         parent_frame,
         text="Save Game",
@@ -90,7 +88,6 @@ def add_save_button(parent_frame, player, dungeon_data, monsters_in_rooms):
     save_button.pack(side=tk.BOTTOM, pady=10)
 
 def add_load_button(parent_frame):
-    """Add a Load button to the GUI."""
     load_button = tk.Button(
         parent_frame,
         text="Load Game",
