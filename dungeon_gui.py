@@ -209,7 +209,7 @@ def add_character_card_button(root, party, dungeon_canvas):
     button_frame.pack(side=tk.BOTTOM, pady=10)
     
     Button(button_frame, text="Character Cards", command=lambda: show_character_selection_window(party),
-           bg="#555", fg="white", width=20).pack(pady=10)
+       bg="#555", fg="white", width=20).pack(pady=10)
 def show_character_selection_window(party):
     selection_window = Toplevel()
     selection_window.title("Character Selection")
@@ -239,7 +239,7 @@ def show_character_card(hero):
             Label(card_window, text="Invalid input! Ensure numbers are used where required.", fg="red", bg="#333").pack()
 
     card_window = Toplevel()
-    card_window.title(f"{hero['Name']}'s Character Card")
+    card_window.title(f"{hero['Name']}'s Characer Card")
     card_window.geometry("400x500")
     card_window.configure(bg="#333")
 
@@ -1048,32 +1048,111 @@ def check_game_end_conditions():
         messagebox.showinfo("Victory!", "You have defeated the monsters in the end room and returned to safety. You won the game!")
         root.destroy()
 
+def check_magic_usage(callback):
+    magic_window = Toplevel()
+    magic_window.title("Magic Usage")
+    magic_window.geometry("300x150")
+    magic_window.configure(bg="#333")
+    
+    tk.Label(magic_window, text="Did your party use any magic?", font=("Arial", 14), fg="white", bg="#333").pack(pady=10)
+    
+    def magic_used():
+        magic_window.destroy()
+        open_monster_cards(callback)
+    
+    def no_magic():
+        magic_window.destroy()
+        callback()
+    
+    tk.Button(magic_window, text="Yes", command=magic_used, bg="#555", fg="white").pack(pady=5)
+    tk.Button(magic_window, text="No", command=no_magic, bg="#555", fg="white").pack(pady=5)
+
+def check_enemy_magic(callback):
+    if not magic_enabled:
+        callback()
+        return
+    
+    magic_window = tk.Toplevel()
+    magic_window.title("Enemy Magic Check")
+    magic_window.geometry("300x150")
+    magic_window.configure(bg="#333")
+    
+    tk.Label(magic_window, text="Did any enemy use magic?", font=("Arial", 14), fg="white", bg="#333").pack(pady=10)
+    
+    def magic_used():
+        magic_window.destroy()
+        show_character_selection_window(party, callback)
+    
+    def no_magic():
+        magic_window.destroy()
+        callback()
+    
+    tk.Button(magic_window, text="Yes", command=magic_used, bg="#555", fg="white").pack(pady=5)
+    tk.Button(magic_window, text="No", command=no_magic, bg="#555", fg="white").pack(pady=5)
+
+def open_monster_cards(callback):
+    monster_window = Toplevel()
+    monster_window.title("Monster Cards")
+    monster_window.geometry("400x400")
+    monster_window.configure(bg="#333")
+
+    tk.Label(monster_window, text="Monster Characteristics", font=("Arial", 14), fg="white", bg="#333").pack(pady=10)
+
+    for monster, characteristics in MONSTER_CHARACTERISTICS.items():
+        tk.Label(monster_window, text=f"{monster}: WP {characteristics['WP']}, CB {characteristics['CB']}", fg="white", bg="#333").pack()
+
+    def close_monster_window():
+        monster_window.destroy()
+        callback()
+
+    tk.Button(monster_window, text="Close", command=close_monster_window, bg="#555", fg="white").pack(pady=10)
+
+def show_character_selection_window(party, callback=None):
+    selection_window = Toplevel()
+    selection_window.title("Character Selection")
+    selection_window.geometry("300x400")
+    selection_window.configure(bg="#333")
+    
+    Label(selection_window, text="Select a Character", font=("Arial", 14), fg="white", bg="#333").pack(pady=10)
+    
+    for hero in party:
+        Button(selection_window, text=hero['Name'], command=lambda h=hero: show_character_card(h),
+               bg="#555", fg="white", width=20).pack(pady=5)
+    
+    def on_close():
+        selection_window.destroy()
+        if callback:
+            callback()
+    
+    Button(selection_window, text="Close", command=on_close, bg="#555", fg="white").pack(pady=20)
+
 def handle_fight(canvas, party, monsters, combat_log, fight_button, negotiate_button, bribe_button, enable_close_button):
     global movement_buttons
-
+    
     for button in movement_buttons.values():
         button.config(state=tk.DISABLED)
-
+    
     negotiate_button.config(state=tk.DISABLED)
     bribe_button.config(state=tk.DISABLED)
-
+    fight_button.config(state=tk.DISABLED)
+    
     canvas.delete("wp_display")
-
+    
     append_to_combat_log(combat_log, "The fight begins!")
     update_combat_display(canvas, party, monsters)
-
+    
     current_turn = [0]
-
+    
     def process_turn():
         nonlocal monsters
-
+        
         if not any(hero["WP"] > 0 for hero in party):
             append_to_combat_log(combat_log, "The party has been defeated!")
             disable_fight_button(fight_button)
             disable_all_buttons()
             check_game_end_conditions()
             return
-
+        
         if not any(monster["WP"] > 0 for monster in monsters):
             append_to_combat_log(combat_log, "The monsters have been defeated!")
             total_gold = sum(calculate_monster_treasure(monster) for monster in monsters)
@@ -1082,19 +1161,15 @@ def handle_fight(canvas, party, monsters, combat_log, fight_button, negotiate_bu
                 party_gold += total_gold
                 update_gold_label()
                 append_to_combat_log(combat_log, f"Treasure collected: {total_gold} Gold Marks!")
+                display_treasure_results(total_gold, 0)
             else:
                 append_to_combat_log(combat_log, "No treasure collected.")
-
-            if player.position in dungeon_data and dungeon_data[player.position]["type"] == "end":
-                dungeon_data["end_cleared"] = True
-                append_to_combat_log(combat_log, "You have cleared the monsters in the end room!")
             
-            disable_fight_button(fight_button)
-            disable_all_buttons()
             enable_close_button()
+            fight_button.config(state=tk.DISABLED)
             check_game_end_conditions()
             return
-
+        
         if current_turn[0] % 2 == 0:
             append_to_combat_log(combat_log, "--- Party Turn ---")
             for hero in party:
@@ -1103,6 +1178,8 @@ def handle_fight(canvas, party, monsters, combat_log, fight_button, negotiate_bu
                     if target:
                         damage = roll_attack_damage(hero, target)
                         target["WP"] -= damage
+                        update_combat_display(canvas, party, monsters)
+
                         append_to_combat_log(combat_log, f"{hero['Name']} attacks {target['Name']} for {damage} damage!")
                         if target["WP"] <= 0:
                             append_to_combat_log(combat_log, f"{target['Name']} is defeated!")
@@ -1114,17 +1191,21 @@ def handle_fight(canvas, party, monsters, combat_log, fight_button, negotiate_bu
                     if target:
                         damage = roll_attack_damage(monster, target)
                         target["WP"] -= damage
+                        update_combat_display(canvas, party, monsters)
+
                         append_to_combat_log(combat_log, f"{monster['Name']} attacks {target['Name']} for {damage} damage!")
                         if target["WP"] <= 0:
                             append_to_combat_log(combat_log, f"{target['Name']} is defeated!")
-
+        
         update_combat_display(canvas, party, monsters)
-
+        
         current_turn[0] += 1
-
-        if any(hero["WP"] > 0 for hero in party) and any(monster["WP"] > 0 for monster in monsters):
+        
+        if current_turn[0] % 2 == 1:
+            check_enemy_magic(process_turn)
+        else:
             canvas.after(1000, process_turn)
-
+    
     process_turn()
 
 def disable_fight_button(fight_button):
@@ -1346,6 +1427,7 @@ def update_combat_display(canvas, party, monsters):
                 )
         else:
             canvas.delete(tag)
+
 
 def open_encounter_window(monster_table, player_position):
     global movement_buttons, encounter_canvas, gold_label, encounter_window
